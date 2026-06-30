@@ -1,0 +1,8 @@
+[project]
+name = "malaria-observer"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.2.15",
+    "wagtail>=7.4.2",
+]
