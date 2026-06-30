@@ -6,3 +6,31 @@ dependencies = [
     "django>=5.2.15",
     "wagtail>=7.4.2",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+# Don't lint or format auto-generated database migrations
+exclude = [
+    "**/migrations/*.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort (import sorting)
+]
+ignore = [
+    "E501", # Line too long (Ruff format handles code width; ignoring this stops long comments/strings from breaking builds)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Django environments rely on star imports split across base/dev/production files
+"*/settings/*.py" = ["F403", "F405"]
