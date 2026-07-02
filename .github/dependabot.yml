@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "uv"
+    reviewers:
+      - "leehart3000"
+    assignees:
+      - "leehart3000"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "gh-actions"
+    reviewers:
+      - "leehart3000"
+    assignees:
+      - "leehart3000"
