@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up uv with Python 3.13
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
+      - name: Ruff checks
+        run: uv run ruff check .
+
+      - name: Ruff format checks
+        run: uv run ruff format --check .
+
+      - name: Mypy checks
+        run: uv run mypy .
+
+      - name: Pytest tests without coverage
+        run: uv run pytest
