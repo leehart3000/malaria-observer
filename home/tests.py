@@ -1,7 +1,15 @@
+import pytest
+from django.test import Client
 from wagtail.models import Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 
 from home.models import HomePage
+
+
+@pytest.mark.django_db
+def test_homepage_loads(client: Client) -> None:
+    response = client.get("/")
+    assert response.status_code == 200
 
 
 class HomeSetUpTests(WagtailPageTestCase):
@@ -30,7 +38,9 @@ class HomeTests(WagtailPageTestCase):
         Create a homepage instance for testing.
         """
         root_page = Page.get_first_root_node()
-        Site.objects.create(hostname="testsite", root_page=root_page, is_default_site=True)
+        Site.objects.create(
+            hostname="testsite", root_page=root_page, is_default_site=True
+        )
         self.homepage = HomePage(title="Home")
         root_page.add_child(instance=self.homepage)
 
