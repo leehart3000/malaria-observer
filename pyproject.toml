@@ -9,9 +9,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "coverage>=7.7.0",
     "django-stubs[compatible-mypy]>=6.0.7",
     "mypy>=2.3.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.12.0",
     "ruff>=0.15.22",
 ]
@@ -42,6 +44,7 @@ ignore = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "malaria_observer.settings.dev"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--cov --cov-report=term-missing --cov-report=xml"
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
@@ -75,3 +78,35 @@ disallow_any_generics = false
 
 [tool.django-stubs]
 django_settings_module = "malaria_observer.settings.dev"
+
+[tool.coverage.run]
+branch = true
+
+source = [
+    "malaria_observer",
+    "home",
+    "search",
+]
+
+omit = [
+    "*/migrations/*",
+    "*/settings/*",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "manage.py",
+    "*/tests.py",
+    "*/test_*.py",
+    "*/*_tests.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+]
