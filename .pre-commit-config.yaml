@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy .
+        language: system
+        pass_filenames: false
+
+      - id: migration-check
+        name: migration check
+        entry: uv run python manage.py makemigrations --check --dry-run
+        language: system
+        pass_filenames: false

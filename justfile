@@ -10,26 +10,29 @@ down:
 run:
     uv run python manage.py runserver
 
+# Lock checks
+lockcheck:
+    uv lock --check
+
+# Ruff checks
+lint:
+    uv run ruff check .
+
+# Ruff format checks
+format:
+    uv run ruff format --check .
+
+# Mypy checks
+typecheck:
+    uv run mypy .
+
 # Run database migrations
 migrate:
     uv run python manage.py migrate
 
-# Run tests
+# Pytest tests with coverage
 test:
     uv run pytest
 
-# Run linters
-lint:
-    uv run ruff check .
-    uv run mypy .
-
-# Format code
-format:
-    uv run ruff format .
-
-# Run type checking
-typecheck:
-    uv run mypy .
-
 # Run everything CI would run
-check: lint typecheck test
+check: lockcheck lint format typecheck test
