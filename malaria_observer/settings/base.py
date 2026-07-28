@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-import environ
 from pathlib import Path
 
 import django_stubs_ext
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -95,9 +95,7 @@ WSGI_APPLICATION = "malaria_observer.wsgi.application"
 
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
-DATABASES = {
-    "default": env.db("DATABASE_URL")
-}
+DATABASES = {"default": env.db("DATABASE_URL")}
 
 
 # Password validation
