@@ -1,4 +1,6 @@
 from .base import *
+from .logging_config import LOGGING
+from .sentry import init_sentry
 
 DEBUG = False
 
@@ -11,6 +13,14 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 STORAGES["staticfiles"]["BACKEND"] = (
     "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 )
+
+SENTRY_DSN = env("SENTRY_DSN", default="")
+init_sentry(SENTRY_DSN)
+
+LOGGING = LOGGING.copy()
+LOGGING["root"] = LOGGING["root"].copy()
+LOGGING["root"]["handlers"] = ["json"]
+LOGGING["root"]["level"] = "INFO"
 
 try:
     from .local import *

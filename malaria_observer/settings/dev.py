@@ -1,4 +1,5 @@
 from .base import *
+from .logging_config import LOGGING
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -11,6 +12,10 @@ ALLOWED_HOSTS = ["*"]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+LOGGING = LOGGING.copy()
+LOGGING["root"] = LOGGING["root"].copy()
+LOGGING["root"]["handlers"] = ["console"]
+LOGGING["root"]["level"] = "DEBUG"
 
 try:
     from .local import *
