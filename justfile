@@ -14,13 +14,13 @@ run:
 lockcheck:
     uv lock --check
 
-# Ruff checks
+# Ruff checks & auto-fixes
 lint:
-    uv run ruff check .
+    uv run ruff check --fix .
 
-# Ruff format checks
+# Ruff format
 format:
-    uv run ruff format --check .
+    uv run ruff format .
 
 # Mypy checks
 typecheck:

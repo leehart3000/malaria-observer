@@ -33,6 +33,10 @@ django_stubs_ext.monkeypatch()
 
 INSTALLED_APPS = [
     "home",
+    "core",
+    "studies",
+    "explorer",
+    "articles",
     "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
