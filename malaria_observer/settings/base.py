@@ -93,12 +93,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "malaria_observer.wsgi.application"
 
+env = environ.Env()
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    env.read_env(env_file)
+
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+DEBUG = env.bool("DEBUG", default=False)
+ENVIRONMENT = env("ENVIRONMENT", default="dev")
+SECRET_KEY = env("SECRET_KEY")
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
 DATABASES = {"default": env.db("DATABASE_URL")}
 
 
