@@ -9,6 +9,7 @@ on:
 env:
   DATABASE_URL: postgres://myproject:myproject@localhost:5432/myproject
   DJANGO_SETTINGS_MODULE: malaria_observer.settings.dev
+  SECRET_KEY: dummy-ci-secret-key
 
 jobs:
   quality:
@@ -50,6 +51,13 @@ jobs:
 
       - name: Ruff format checks
         run: uv run ruff format --check .
+
+      - name: Show mypy environment
+        run: |
+          uv run python --version
+          uv run mypy --version
+          uv run python -c "import django, mypy_django_plugin; print('Django:', django.get_version()); print('django-stubs plugin:', mypy_django_plugin.__file__)"
+          uv tree | grep -E "mypy|django-stubs|django-stubs-ext"
 
       - name: Mypy checks
         run: uv run mypy .
