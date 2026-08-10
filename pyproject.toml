@@ -8,6 +8,7 @@ dependencies = [
     "psycopg[binary]>=3.3.4",
     "sentry-sdk>=2.66.1",
     "wagtail>=7.4.2",
+    "whitenoise>=6.6.0",
 ]
 
 [dependency-groups]
