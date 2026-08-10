@@ -35,4 +35,4 @@ test:
     uv run pytest
 
 # Run everything CI would run
-check: lockcheck lint format typecheck test
+check: lockcheck lint format typecheck migrate test
