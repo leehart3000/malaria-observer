@@ -10,5 +10,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://myproject:mypassword@db:5432/myproject
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
 volumes:
   postgres_data:
