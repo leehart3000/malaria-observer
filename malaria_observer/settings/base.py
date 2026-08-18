@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from typing import Any
 
 import django_stubs_ext
 import environ
@@ -162,7 +163,7 @@ MEDIA_URL = "/media/"
 
 # Default storage settings
 # See https://docs.djangoproject.com/en/6.0/ref/settings/#std-setting-STORAGES
-STORAGES = {
+STORAGES: dict[str, dict[str, Any]] = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
