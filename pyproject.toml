@@ -20,7 +20,7 @@ dev = [
     "pre-commit>=4.6.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "pytest-django>=4.13.0",
+    "pytest-django>=4.14.0",
     "ruff>=0.16.2",
     "wagtail-factories>=4.5.0",
 ]
