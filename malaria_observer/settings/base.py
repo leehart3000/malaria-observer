@@ -102,9 +102,11 @@ if env_file.exists():
     env.read_env(env_file)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env("ENVIRONMENT", default="dev")
 SECRET_KEY = env("SECRET_KEY")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -156,7 +158,6 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / "static"
 STATIC_URL = "/static/"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
@@ -168,7 +169,7 @@ STORAGES: dict[str, dict[str, Any]] = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
