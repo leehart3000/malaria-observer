@@ -9,3 +9,7 @@ PASSWORD_HASHERS = [
 ALLOWED_HOSTS = ["testserver", "localhost"]
 
 SECRET_KEY = "test-secret-key"
+
+STORAGES["staticfiles"]["BACKEND"] = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
