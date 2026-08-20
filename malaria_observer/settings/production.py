@@ -12,21 +12,11 @@ STORAGES["staticfiles"]["BACKEND"] = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
 
-if env("GS_CREDENTIALS_FILE", default=""):
-    from google.oauth2 import service_account
-
-    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-        env("GS_CREDENTIALS_FILE")
-    )
-else:
-    GS_CREDENTIALS = None
-
 STORAGES["default"] = {
     "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
     "OPTIONS": {
         "bucket_name": env("GS_BUCKET_NAME"),
         "project_id": env("GS_PROJECT_ID"),
-        "credentials": GS_CREDENTIALS,
         "querystring_auth": False,
         "location": "media",
         "file_overwrite": False,
