@@ -86,7 +86,7 @@ disallow_incomplete_defs = false
 disallow_any_generics = false
 
 [tool.django-stubs]
-django_settings_module = "malaria_observer.settings.dev"
+django_settings_module = "malaria_observer.settings.test"
 
 [tool.coverage.run]
 branch = true
