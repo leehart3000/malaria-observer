@@ -19,6 +19,9 @@ services:
       - db
     ports:
       - "8080:8080"
+    volumes:
+      - media_data:/app/media
 
 volumes:
   postgres_data:
+  media_data:
