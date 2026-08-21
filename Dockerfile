@@ -37,6 +37,8 @@ RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-r
 
 RUN useradd django && chown django:django /app
 
+RUN mkdir -p /app/media && chown django:django /app/media
+
 COPY --from=builder --chown=django:django /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
