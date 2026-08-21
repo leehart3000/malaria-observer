@@ -29,7 +29,7 @@ GS_FILE_OVERWRITE = False
 
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
-    init_sentry(SENTRY_DSN)
+    init_sentry(dsn=SENTRY_DSN, environment=ENVIRONMENT)
 
 LOGGING = LOGGING.copy()
 LOGGING["root"] = LOGGING["root"].copy()
