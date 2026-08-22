@@ -1,8 +1,10 @@
 name: Deploy to Staging
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   id-token: write
@@ -15,14 +17,24 @@ env:
   IMAGE: malaria-observer
 
 jobs:
-  build-and-push:
+  build-push-migrate-and-deploy:
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set image tag
-        run: echo "IMAGE_TAG=git-${GITHUB_SHA}" >> "$GITHUB_ENV"
+        env:
+          GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "IMAGE_TAG=git-${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - id: auth
         uses: google-github-actions/auth@v3
@@ -45,3 +57,34 @@ jobs:
         run: |
           docker push \
             ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+
+      - name: Update migration job image
+        run: |
+          gcloud run jobs update migrate-staging \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+
+      - name: Run staging database migrations
+        run: |
+          gcloud run jobs execute migrate-staging \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --wait
+
+      - name: Deploy to Cloud Run staging service
+        run: |
+          gcloud run deploy malaria-observer-staging \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
+            --port=8080 \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=10 \
+            --service-account=staging-cloud-run-sa@malaria-observer.iam.gserviceaccount.com \
+            --set-env-vars="DJANGO_SETTINGS_MODULE=malaria_observer.settings.staging,GS_BUCKET_NAME=malaria-observer-staging-media,GS_PROJECT_ID=malaria-observer,ALLOWED_HOSTS=malaria-observer-staging-147133052108.europe-west3.run.app,CSRF_TRUSTED_ORIGINS=https://malaria-observer-staging-147133052108.europe-west3.run.app,ENVIRONMENT=staging" \
+            --set-secrets="DATABASE_URL=staging-database-url:latest,SECRET_KEY=staging-secret-key:latest,SENTRY_DSN=staging-sentry-dsn:latest"
