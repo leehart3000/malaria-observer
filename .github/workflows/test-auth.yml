@@ -1,0 +1,26 @@
+name: Test WIF Authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/147133052108/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: gha-staging-deploy-sa@malaria-observer.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Verify identity
+        run: |
+          gcloud auth list
+          gcloud config get-value account
+          gcloud projects describe malaria-observer --format="value(projectId)"
