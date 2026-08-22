@@ -86,5 +86,5 @@ jobs:
             --min-instances=0 \
             --max-instances=10 \
             --service-account=staging-cloud-run-sa@malaria-observer.iam.gserviceaccount.com \
-            --set-env-vars="DJANGO_SETTINGS_MODULE=malaria_observer.settings.staging,GS_BUCKET_NAME=malaria-observer-staging-media,GS_PROJECT_ID=malaria-observer,ALLOWED_HOSTS=malaria-observer-staging-147133052108.europe-west3.run.app,malaria-observer-staging-oo6ndbprrq-ey.a.run.app,CSRF_TRUSTED_ORIGINS=https://malaria-observer-staging-147133052108.europe-west3.run.app,https://malaria-observer-staging-oo6ndbprrq-ey.a.run.app,ENVIRONMENT=staging" \
+            --set-env-vars="^@^DJANGO_SETTINGS_MODULE=malaria_observer.settings.staging@GS_BUCKET_NAME=malaria-observer-staging-media@GS_PROJECT_ID=malaria-observer@ALLOWED_HOSTS=malaria-observer-staging-147133052108.europe-west3.run.app,malaria-observer-staging-oo6ndbprrq-ey.a.run.app@CSRF_TRUSTED_ORIGINS=https://malaria-observer-staging-147133052108.europe-west3.run.app,https://malaria-observer-staging-oo6ndbprrq-ey.a.run.app@ENVIRONMENT=staging" \
             --set-secrets="DATABASE_URL=staging-database-url:latest,SECRET_KEY=staging-secret-key:latest,SENTRY_DSN=staging-sentry-dsn:latest"
