@@ -1,5 +1,5 @@
 # Stage 1 — build
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /uvx /usr/local/bin/
 
@@ -25,7 +25,7 @@ COPY . .
 
 
 # Stage 2 — runtime
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.13-slim-bookworm AS runtime
 
 WORKDIR /app
 
