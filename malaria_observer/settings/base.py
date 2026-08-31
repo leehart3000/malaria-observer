@@ -35,7 +35,7 @@ django_stubs_ext.monkeypatch()
 INSTALLED_APPS = [
     "home",
     "core",
-    "studies",
+    "datasets",
     "explorer",
     "articles",
     "search",

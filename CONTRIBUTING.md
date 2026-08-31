@@ -72,7 +72,7 @@ uv run pre-commit install
 ## Testing
 
 Tests use a dedicated PostgreSQL test database and Wagtail's `WagtailPageTestCase`
-for page-model tests. See `studies/tests.py` for an example pattern.
+for page-model tests. See `datasets/tests.py` for an example pattern.
 
 ## Conventions
 

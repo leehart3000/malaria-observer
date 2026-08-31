@@ -1,0 +1,51 @@
+{% extends "core/base_page.html" %}
+
+{% block content %}
+    <div class="prose max-w-none">
+        <h1 class="text-3xl font-bold">{{ page.title }}</h1>
+
+        {% if page.summary %}
+            <p class="text-lg text-gray-700">{{ page.summary }}</p>
+        {% endif %}
+
+        {% if page.dataset %}
+            <div class="mt-6 p-4 bg-gray-50 rounded border">
+                <h2 class="text-xl font-semibold">Dataset: {{ page.dataset.name }}</h2>
+                <dl class="grid grid-cols-1 gap-2 mt-2">
+                    <dt class="font-medium">Dataset ID</dt>
+                    <dd>{{ page.dataset.dataset_id }}</dd>
+                    {% if page.dataset.authors %}
+                        <dt class="font-medium">Authors</dt>
+                        <dd>{{ page.dataset.authors }}</dd>
+                    {% endif %}
+                    {% if page.dataset.publication_year %}
+                        <dt class="font-medium">Year</dt>
+                        <dd>{{ page.dataset.publication_year }}</dd>
+                    {% endif %}
+                    {% if page.dataset.doi %}
+                        <dt class="font-medium">DOI</dt>
+                        <dd><a href="{{ page.dataset.doi }}" class="text-blue-600">{{ page.dataset.doi }}</a></dd>
+                    {% endif %}
+                    {% if page.dataset.license %}
+                        <dt class="font-medium">License</dt>
+                        <dd>{{ page.dataset.get_license_display }}</dd>
+                    {% endif %}
+                    {% if page.dataset.attribution %}
+                        <dt class="font-medium">Attribution</dt>
+                        <dd class="text-sm">{{ page.dataset.attribution|linebreaks }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        {% endif %}
+
+        {% if page.dataset %}
+            <div class="mt-4">
+                <a href="{% url 'explorer_table' %}?set={{ page.dataset.dataset_id }}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    View data in Explorer →
+                </a>
+            </div>
+        {% endif %}
+
+        {{ block.super }}
+    </div>
+{% endblock %}

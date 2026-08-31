@@ -1,6 +1,10 @@
 # Malaria Observer
 
-Malaria Observer is an open-source Wagtail application for exploring publicly available malaria datasets and the scientific studies that produce them. It combines editorial content with interactive data exploration and geographical mapping.
+Malaria Observer is an open-source Wagtail application for exploring
+publicly available datasets relating to malaria research, including
+information about the scientific studies that produced the data. The
+web application combines editorial content with interactive data
+exploration and visualisations.
 
 ## Requirements
 
@@ -48,7 +52,8 @@ The project is organised by domain responsibility.
 
 - `home` — homepage and simple top-level landing pages.
 - `core` — shared Wagtail components: base page models, StreamField blocks, utilities, mixins, template tags, and common functionality used across other apps.
-- `studies` — Wagtail pages for scientific studies, publications, and associated metadata, including links to data sources.
+- `datasets` — authoritative dataset records and provenance metadata,
+  optional Wagtail pages describing datasets, and dataset collection pages.
 - `explorer` — a Django app providing interactive exploration of datasets, observations and geographic data.
 - `articles` — Wagtail pages for articles, explainers, educational content, and news.
 - `search` — Wagtail site search.

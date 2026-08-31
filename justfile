@@ -1,12 +1,12 @@
-# Start Docker services, inc. the local Postgres container
+# Start Docker services in the background
 up:
     docker compose up -d
 
-# Stop Docker services, inc. the local Postgres container
+# Stop Docker services
 down:
     docker compose down
 
-# Run the app, i.e. Django dev server
+# Run the Django dev server
 run:
     uv run python manage.py runserver
 
@@ -26,13 +26,21 @@ format:
 typecheck:
     uv run mypy .
 
+# Run Django check
+djangocheck:
+    uv run python manage.py check
+
+# Make database migrations
+makemigrations:
+    uv run python manage.py makemigrations
+
 # Run database migrations
 migrate:
     uv run python manage.py migrate
 
-# Pytest tests with coverage
+# Pytest tests with coverage and fresh db
 test:
-    uv run pytest
+    uv run pytest --create-db
 
-# Run everything CI would run
-check: lockcheck lint format typecheck migrate test
+# Run all checks, without migrate
+check: lockcheck lint format typecheck test djangocheck

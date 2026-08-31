@@ -1,0 +1,22 @@
+{% extends "core/base_page.html" %}
+
+{% block content %}
+    <h2 class="text-2xl font-semibold mb-4">Datasets</h2>
+
+    {% if page.get_children.live %}
+        <ul class="space-y-3">
+            {% for child in page.get_children.live.specific %}
+                <li>
+                    <a href="{{ child.url }}" class="text-blue-600 hover:underline">
+                        {{ child.title }}
+                    </a>
+                    {% if child.summary %}
+                        <p class="text-sm text-gray-600">{{ child.summary }}</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No datasets have been published yet.</p>
+    {% endif %}
+{% endblock %}
