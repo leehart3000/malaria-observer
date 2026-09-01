@@ -26,12 +26,15 @@
             <div class="hidden sm:flex items-center gap-6">
                 {% dataset_index_url as datasets_url %}
                 {% if datasets_url %}<a href="{{ datasets_url }}" class="text-gray-600 hover:text-blue-600">Datasets</a>{% endif %}
+                {% article_index_url as articles_url %}
+                {% if articles_url %}<a href="{{ articles_url }}" class="text-gray-600 hover:text-blue-600">Articles</a>{% endif %}
                 {% contact_page_url as contact_url %}
                 {% if contact_url %}<a href="{{ contact_url }}" class="text-gray-600 hover:text-blue-600">Contact</a>{% endif %}
             </div>
         </div>
         <div x-show="open" x-cloak class="sm:hidden mt-3 flex flex-col gap-3">
             {% if datasets_url %}<a href="{{ datasets_url }}" class="text-gray-600 hover:text-blue-600">Datasets</a>{% endif %}
+            {% if articles_url %}<a href="{{ articles_url }}" class="text-gray-600 hover:text-blue-600">Articles</a>{% endif %}
             {% if contact_url %}<a href="{{ contact_url }}" class="text-gray-600 hover:text-blue-600">Contact</a>{% endif %}
         </div>
     </nav>

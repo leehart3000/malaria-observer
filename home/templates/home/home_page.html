@@ -1,22 +1,21 @@
-{% extends "core/layout.html" %}
+{% extends "core/base_page.html" %}
 {% load core_extras %}
 
-{% block body %}
-<div class="max-w-3xl mx-auto py-10 px-4">
-    <h1 class="text-3xl font-bold mb-6">{{ page.title }}</h1>
-
-    {% if page.intro %}
-        <div class="prose mb-6">
-            {{ page.intro }}
-        </div>
-    {% endif %}
-
-    {% dataset_index_url as datasets_url %}
-    {% if datasets_url %}
-        <a href="{{ datasets_url }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            {% include "core/includes/icons/table.html" %}
-            Datasets
-        </a>
-    {% endif %}
-</div>
+{% block content %}
+    <div class="flex flex-wrap gap-3 mt-6">
+        {% dataset_index_url as datasets_url %}
+        {% if datasets_url %}
+            <a href="{{ datasets_url }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                {% include "core/includes/icons/table.html" %}
+                Datasets
+            </a>
+        {% endif %}
+        {% article_index_url as articles_url %}
+        {% if articles_url %}
+            <a href="{{ articles_url }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                {% include "core/includes/icons/file-text.html" %}
+                Articles
+            </a>
+        {% endif %}
+    </div>
 {% endblock %}

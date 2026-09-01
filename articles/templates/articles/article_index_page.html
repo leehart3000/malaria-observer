@@ -1,0 +1,23 @@
+{% extends "core/base_page.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+    {% with children=page.get_children.live.specific %}
+        {% if children %}
+            <ul class="space-y-6 mt-8">
+                {% for child in children %}
+                    <li>
+                        <a href="{{ child.url }}" class="text-blue-600 hover:underline text-lg font-medium">
+                            {{ child.title }}
+                        </a>
+                        {% if child.summary %}
+                            <div class="text-gray-600 mt-1">{{ child.summary|richtext }}</div>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mt-8">No articles have been published yet.</p>
+        {% endif %}
+    {% endwith %}
+{% endblock %}

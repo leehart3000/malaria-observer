@@ -61,3 +61,11 @@ def contact_page_url():
 
     page = ContactPage.objects.live().first()
     return page.url if page else None
+
+
+@register.simple_tag
+def article_index_url():
+    from articles.models import ArticleIndexPage
+
+    page = ArticleIndexPage.objects.live().first()
+    return page.url if page else None
