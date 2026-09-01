@@ -7,7 +7,7 @@ content. Dataset releases that supersede one another (e.g. Pf7 → Pf8) are curr
 
 `SampleRecord` belongs to exactly one `Dataset`. Sample identifiers are
 unique within a dataset, but are not globally unique. Consequently, the same
-sample identifier may occur in multiple datasets. Contributing studies are currently stored only as free text (`source_study`) on `SampleRecord`; a dedicated many-to-many model may be introduced later if the site needs to describe individual research projects directly.
+sample identifier may occur in multiple datasets. Contributing studies are currently stored only as free text (`study`) on `SampleRecord`; a dedicated many-to-many model may be introduced later if the site needs to describe individual research projects directly.
 
 A `DatasetPage` is optional Wagtail editorial content describing a `Dataset`.
 It is not the authoritative representation of the dataset and is not required

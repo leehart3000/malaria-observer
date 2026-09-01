@@ -1,52 +1,87 @@
-{% extends "core/layout.html" %}
+{% extends "core/layout.html" %}{% load explorer_extras %}
 
 {% block title %}Data Explorer: {{ dataset.name }}{% endblock %}
 
 {% block body %}
 <div class="max-w-7xl mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold mb-2">{{ dataset.name }}</h1>
+
+    <form method="get" class="mb-4 flex flex-wrap gap-3 items-end">
+        <input type="hidden" name="set" value="{{ dataset.dataset_id }}">
+        {% if request.GET.sort %}<input type="hidden" name="sort" value="{{ request.GET.sort }}">{% endif %}
+        {% if request.GET.order %}<input type="hidden" name="order" value="{{ request.GET.order }}">{% endif %}
+        {% for field in filter.form %}
+            <div class="flex flex-col">
+                <label class="text-xs text-gray-500">{{ field.label }}</label>
+                {{ field }}
+            </div>
+        {% endfor %}
+        <div class="flex flex-col">
+            <label class="text-xs text-gray-500" for="missingness-select">Missingness</label>
+            <select id="missingness-select" name="missingness">
+                <option value="" {% if not request.GET.missingness %}selected{% endif %}></option>
+                <option value="with" {% if request.GET.missingness == "with" %}selected{% endif %}>With missingness</option>
+                <option value="without" {% if request.GET.missingness == "without" %}selected{% endif %}>Without missingness</option>
+            </select>
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">Apply</button>
+        <a href="?{{ reset_query }}" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Reset</a>
+    </form>
+
     <p class="text-gray-600 mb-6">
-        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
-        of {{ paginator.count }} samples.
-        <a href="?set={{ dataset.dataset_id }}" class="text-blue-600">Reset filters</a>
+        {% if paginator %}
+            {% if is_filtered %}
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                of {{ paginator.count }} matching samples.
+            {% else %}
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                of {{ paginator.count }} samples.
+            {% endif %}
+        {% else %}
+            {% if is_filtered %}
+                Showing all {{ samples|length }} matching samples.
+            {% else %}
+                Showing all {{ samples|length }} samples.
+            {% endif %}
+        {% endif %}
     </p>
 
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">Sample</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">Source Study</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">Country</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">Year</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">QC Pass</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">Sample Type</th>
-                    <th class="px-4 py-2 text-left font-medium text-gray-500">ENA</th>
+                    {% for col in sort_columns %}
+                        <th class="px-4 py-2 text-left font-medium text-gray-500">
+                            <a href="?{{ col.query }}" class="hover:underline">{{ col.label }}</a>{% if col.arrow %} <span>{{ col.arrow }}</span>{% endif %}
+                        </th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
                 {% for sample in samples %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 font-mono text-xs">{{ sample.sample }}</td>
-                        <td class="px-4 py-2">{{ sample.source_study|default:"—" }}</td>
-                        <td class="px-4 py-2">{{ sample.country|default:"—" }}</td>
-                        <td class="px-4 py-2">{{ sample.year|default:"—" }}</td>
-                        <td class="px-4 py-2">{{ sample.qc_pass|yesno:"✅,❌" }}</td>
-                        <td class="px-4 py-2">{{ sample.sample_type|default:"—" }}</td>
+                        <td class="px-4 py-2">{{ sample.study }}</td>
+                        <td class="px-4 py-2">{{ sample.country|default_if_none:"" }}</td>
+                        <td class="px-4 py-2">{{ sample.year|default_if_none:"" }}</td>
+                        <td class="px-4 py-2">{{ sample.qc_pass }}</td>
+                        <td class="px-4 py-2">{{ sample.sample_type }}</td>
                         <td class="px-4 py-2">
                             {% if sample.ena %}
                                 <a href="https://www.ebi.ac.uk/ena/browser/view/{{ sample.ena }}" target="_blank" class="text-blue-600">
                                     {{ sample.ena }}
                                 </a>
-                            {% else %}
-                                —
                             {% endif %}
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
                         <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                            No samples found for this dataset.
+                            {% if is_filtered %}
+                                No samples in this dataset match the filter.
+                            {% else %}
+                                No samples found for this dataset.
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -55,21 +90,37 @@
     </div>
 
     {% if is_paginated %}
-        <div class="mt-6 flex justify-between items-center">
+        <div class="mt-6 flex items-center gap-3">
+            {% if page_obj.has_previous %}
+                <a href="?{{ page_query_first }}" class="text-blue-600" title="First page">«</a>
+                <a href="?{{ page_query_prev }}" class="text-blue-600" title="Previous page">‹</a>
+            {% endif %}
             <span class="text-sm text-gray-600">
                 Page {{ page_obj.number }} of {{ paginator.num_pages }}
             </span>
-            <div class="space-x-2">
-                {% if page_obj.has_previous %}
-                    <a href="?set={{ dataset.dataset_id }}&page=1" class="text-blue-600">First</a>
-                    <a href="?set={{ dataset.dataset_id }}&page={{ page_obj.previous_page_number }}" class="text-blue-600">Previous</a>
-                {% endif %}
-                {% if page_obj.has_next %}
-                    <a href="?set={{ dataset.dataset_id }}&page={{ page_obj.next_page_number }}" class="text-blue-600">Next</a>
-                    <a href="?set={{ dataset.dataset_id }}&page={{ paginator.num_pages }}" class="text-blue-600">Last</a>
-                {% endif %}
-            </div>
+            {% if page_obj.has_next %}
+                <a href="?{{ page_query_next }}" class="text-blue-600" title="Next page">›</a>
+                <a href="?{{ page_query_last }}" class="text-blue-600" title="Last page">»</a>
+            {% endif %}
         </div>
     {% endif %}
+
+    <div class="mb-4 flex items-center gap-2 text-sm">
+        <label for="page-size-select" class="text-gray-500">Rows per page:</label>
+        <select id="page-size-select" onchange="window.location.href=this.value" class="border rounded px-2 py-1">
+            {% for size in page_size_choices %}
+                <option value="?{{ page_size_query|get_item:size }}"
+                        {% if samples|length == size or not current_page_size and size == 50 %}selected{% endif %}>
+                    {{ size }}
+                </option>
+            {% endfor %}
+            {% if show_all_available %}
+                <option value="?{{ page_size_query|get_item:'all' }}" {% if current_page_size == 'all' %}selected{% endif %}>
+                    All
+                </option>
+            {% endif %}
+        </select>
+    </div>
+
 </div>
 {% endblock %}

@@ -11,9 +11,9 @@ class SampleRecord(models.Model):
     # partner study/project that provided this sample. Not a
     # relationship to anything in this codebase; kept as plain
     # descriptive text.
-    source_study = models.CharField(max_length=100)
+    study = models.CharField(max_length=100)
 
-    all_samples_same_case = models.CharField(max_length=50)
+    all_samples_same_case = models.CharField(max_length=150)
     population = models.CharField(max_length=50)
     qc_pass = models.BooleanField()
     exclusion_reason = models.CharField(max_length=100)
@@ -33,7 +33,7 @@ class SampleRecord(models.Model):
     year = models.IntegerField(
         null=True, blank=True
     )  # normalised from source's numeric-string form
-    ena = models.CharField(max_length=50, null=True, blank=True)
+    ena = models.CharField(max_length=200, null=True, blank=True)
     pct_callable = models.FloatField(null=True, blank=True)
 
     # Relationship to the Dataset (plain model, not a Wagtail page).
@@ -45,6 +45,15 @@ class SampleRecord(models.Model):
         on_delete=models.PROTECT,
         related_name="sample_records",
     )
+
+    # Row position in the original source file, recorded at import time
+    # so the explorer table can preserve source order as its default
+    # (unsorted) view -- since a database table itself has no inherent
+    # row order. Ordering is scoped per-dataset, not global, matching
+    # how "sample" identifiers are also only unique per-dataset. This is
+    # an internal implementation detail: it has no user-facing column,
+    # no sort-arrow indicator, and is not part of SORTABLE_COLUMNS.
+    source_order = models.PositiveIntegerField()
 
     class Meta:
         # RUF012 (mutable class attribute) is a false positive here --
