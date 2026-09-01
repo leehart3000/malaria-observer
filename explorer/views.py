@@ -1,11 +1,12 @@
-from django.db.models import Q
-from django.http import QueryDict
+from django.db.models import Count, Q
+from django.http import HttpRequest, QueryDict
 from django.shortcuts import get_object_or_404
 from django.views.generic import ListView
 
 from datasets.models import Dataset
 
 from .filters import (
+    LEVEL_FIELDS,
     MISSING_VALUE_FIELDS,
     SORT_FIELDS,
     SORTABLE_COLUMNS,
@@ -17,7 +18,53 @@ PAGE_SIZE_CHOICES = [25, 50, 100, 200]
 SHOW_ALL_THRESHOLD = 1000
 
 
-class ExplorerTableView(ListView):
+class DatasetFilteredMixin:
+    """Shared dataset lookup + text/QC/missingness filtering, used by
+    both the table and geo (map) views so they stay in parity."""
+
+    request: HttpRequest  # provided by the View this mixin is combined with
+
+    def get_filtered_queryset(self):
+        dataset_id = self.request.GET.get("set")
+        self.dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+        base_queryset = SampleRecord.objects.filter(dataset=self.dataset)
+
+        self.filterset = SampleRecordFilter(self.request.GET, queryset=base_queryset)
+        queryset = self.filterset.qs
+
+        filterset_active = False
+        if self.filterset.form.is_valid():
+            filterset_active = any(
+                value not in (None, "", [])
+                for value in self.filterset.form.cleaned_data.values()
+            )
+
+        self.missingness = self.request.GET.get("missingness")
+        if self.missingness in ("with", "without"):
+            missing_query = Q()
+            for field in MISSING_VALUE_FIELDS:
+                missing_query |= Q(**{f"{field}__isnull": True})
+            queryset = (
+                queryset.filter(missing_query)
+                if self.missingness == "with"
+                else queryset.exclude(missing_query)
+            )
+
+        self.is_filtered = filterset_active or self.missingness in ("with", "without")
+        return queryset
+
+    def _query(self, overrides=None, remove=None) -> str:
+        query: QueryDict = self.request.GET.copy()
+        for key in remove or []:
+            query.pop(key, None)
+        for key, value in (overrides or {}).items():
+            query[key] = value
+        for key in [k for k, v in query.items() if v == ""]:
+            query.pop(key)
+        return query.urlencode()
+
+
+class ExplorerTableView(DatasetFilteredMixin, ListView):
     template_name = "explorer/table.html"
     context_object_name = "samples"
     paginate_by = 50
@@ -33,34 +80,7 @@ class ExplorerTableView(ListView):
         return self.paginate_by
 
     def get_queryset(self):
-        dataset_id = self.request.GET.get("set")
-        self.dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-        base_queryset = SampleRecord.objects.filter(dataset=self.dataset)
-
-        self.filterset = SampleRecordFilter(self.request.GET, queryset=base_queryset)
-        queryset = self.filterset.qs
-
-        filterset_active = False
-        if self.filterset.form.is_valid():
-            filterset_active = any(
-                value not in (None, "", [])
-                for value in self.filterset.form.cleaned_data.values()
-            )
-
-        # "Missingness" selector -- deliberately not part of
-        # SampleRecordFilter (see filters.py comment); a direct
-        # query-param check, mirroring sort/order/page_size.
-        self.missingness = self.request.GET.get("missingness")
-        if self.missingness in ("with", "without"):
-            missing_query = Q()
-            for field in MISSING_VALUE_FIELDS:
-                missing_query |= Q(**{f"{field}__isnull": True})
-            if self.missingness == "with":
-                queryset = queryset.filter(missing_query)
-            else:  # "without"
-                queryset = queryset.exclude(missing_query)
-
-        self.is_filtered = filterset_active or self.missingness in ("with", "without")
+        queryset = self.get_filtered_queryset()
 
         self.sort = self.request.GET.get("sort")
         self.order = self.request.GET.get("order")
@@ -71,21 +91,6 @@ class ExplorerTableView(ListView):
             queryset = queryset.order_by("source_order")
 
         return queryset
-
-    def _query(self, overrides=None, remove=None) -> str:
-        """Build a querystring from the current GET params, with some
-        keys overridden and/or removed. Used to preserve filters/sort
-        across sort-header clicks and pagination links."""
-        query: QueryDict = self.request.GET.copy()
-        for key in remove or []:
-            query.pop(key, None)
-        for key, value in (overrides or {}).items():
-            query[key] = value
-        # Drop blank params entirely so URLs stay clean (e.g. an
-        # untouched "q=" or "year=" left over from the filter form).
-        for key in [k for k, v in query.items() if v == ""]:
-            query.pop(key)
-        return query.urlencode()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -111,9 +116,6 @@ class ExplorerTableView(ListView):
 
         context["reset_query"] = f"set={self.dataset.dataset_id}"
 
-        # Page-size control state. "All" is only offered as an option
-        # when the (filtered) result count is under the threshold, so a
-        # huge dataset can't accidentally be rendered as one giant table.
         total_count = (
             context["paginator"].count
             if context.get("paginator") is not None
@@ -152,20 +154,47 @@ class ExplorerTableView(ListView):
         return context
 
 
-class ExplorerGeoView(ListView):
-    """Minimal placeholder for the geographic explorer view. Confirms
-    the dataset exists and has geographic data, and renders a
-    'coming soon' template -- the actual map is a separate, later task."""
+class ExplorerGeoView(DatasetFilteredMixin, ListView):
+    """Aggregates filtered samples into one point per unique location
+    (at the chosen coordinate level), with a sample count per point --
+    plotting one marker per sample would be impractical at dataset
+    sizes of tens of thousands of rows."""
 
     template_name = "explorer/geo.html"
-    context_object_name = "samples"
+    context_object_name = "locations"
 
     def get_queryset(self):
-        dataset_id = self.request.GET.get("set")
-        self.dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-        return SampleRecord.objects.none()  # not yet rendering any data
+        queryset = self.get_filtered_queryset()
+
+        level = self.request.GET.get("level")
+        if level not in LEVEL_FIELDS:
+            level = "country"
+        self.level = level
+        fields = LEVEL_FIELDS[self.level]
+
+        queryset = queryset.exclude(**{f"{fields['lat']}__isnull": True})
+        return (
+            queryset.values(fields["lat"], fields["lon"], fields["label"])
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["dataset"] = self.dataset
+        context["filter"] = self.filterset
+        context["is_filtered"] = self.is_filtered
+        context["level"] = self.level
+        context["reset_query"] = f"set={self.dataset.dataset_id}"
+
+        fields = LEVEL_FIELDS[self.level]
+        context["locations_data"] = [
+            {
+                "lat": loc[fields["lat"]],
+                "lon": loc[fields["lon"]],
+                "label": loc[fields["label"]] or "Unknown",
+                "count": loc["count"],
+            }
+            for loc in context["locations"]
+        ]
         return context

@@ -1,0 +1,26 @@
+{% if dataset %}
+    <div class="flex flex-wrap gap-3 mb-4">
+        {% if dataset.page %}
+            <a href="{{ dataset.page.url }}"
+               class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                {% include "core/includes/icons/info.html" %}
+                Dataset info
+            </a>
+        {% endif %}
+        {% if current_view == "table" %}
+            {% if dataset.has_geographic_data %}
+                <a href="{% url 'explorer_geo' %}?{{ carried_query }}"
+                   class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    {% include "core/includes/icons/globe.html" %}
+                    View data on map
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'explorer_table' %}?{{ carried_query }}"
+               class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                {% include "core/includes/icons/table.html" %}
+                View data in table
+            </a>
+        {% endif %}
+    </div>
+{% endif %}

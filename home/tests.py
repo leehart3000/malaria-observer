@@ -1,52 +1,28 @@
-import pytest
-from django.test import Client
-from wagtail.models import Page, Site
+from wagtail.models import Site
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
 from home.models import HomePage
 
 
-@pytest.mark.django_db
-def test_homepage_loads(client: Client) -> None:
-    response = client.get("/")
-    assert response.status_code == 200
-
-
-class HomeSetUpTests(WagtailPageTestCase):
-    """
-    Tests for basic page structure setup and HomePage creation.
-    """
-
-    def test_root_create(self):
-        root_page = Page.objects.get(pk=1)
-        self.assertIsNotNone(root_page)
-
-    def test_homepage_create(self):
-        root_page = Page.objects.get(pk=1)
-        homepage = HomePage(title="Home")
-        root_page.add_child(instance=homepage)
-        self.assertTrue(HomePage.objects.filter(title="Home").exists())
-
-
-class HomeTests(WagtailPageTestCase):
-    """
-    Tests for homepage functionality and rendering.
-    """
-
-    def setUp(self):
-        """
-        Create a homepage instance for testing.
-        """
-        root_page = Page.get_first_root_node()
-        Site.objects.create(
-            hostname="testsite", root_page=root_page, is_default_site=True
+class HomePageTests(WagtailPageTestCase):
+    def test_home_page_renders_intro(self):
+        root = Site.objects.get(is_default_site=True).root_page
+        home = HomePage(
+            title="Welcome", intro=[("paragraph", RichText("<p>Test intro text.</p>"))]
         )
-        self.homepage = HomePage(title="Home")
-        root_page.add_child(instance=self.homepage)
+        root.add_child(instance=home)
+        home.save_revision().publish()
 
-    def test_homepage_is_renderable(self):
-        self.assertPageIsRenderable(self.homepage)
+        response = self.client.get(home.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test intro text.")
 
-    def test_homepage_template_used(self):
-        response = self.client.get(self.homepage.url)
-        self.assertTemplateUsed(response, "home/home_page.html")
+    def test_home_page_renders_without_intro(self):
+        root = Site.objects.get(is_default_site=True).root_page
+        home = HomePage(title="Welcome")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+
+        response = self.client.get(home.url)
+        self.assertEqual(response.status_code, 200)

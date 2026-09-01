@@ -6,33 +6,33 @@
             <div class="mt-6 p-4 bg-gray-50 rounded border">
                 <dl class="divide-y divide-gray-200">
                     {% if page.dataset.authors %}
-                        <div class="py-2 flex gap-4">
-                            <dt class="font-medium w-32 shrink-0">Authors</dt>
-                            <dd>{{ page.dataset.authors }}</dd>
+                        <div class="py-2 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                            <dt class="font-medium sm:w-32 sm:shrink-0">Authors</dt>
+                            <dd class="break-words">{{ page.dataset.authors }}</dd>
                         </div>
                     {% endif %}
                     {% if page.dataset.publication_year %}
-                        <div class="py-2 flex gap-4">
-                            <dt class="font-medium w-32 shrink-0">Year</dt>
-                            <dd>{{ page.dataset.publication_year }}</dd>
+                        <div class="py-2 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                            <dt class="font-medium sm:w-32 sm:shrink-0">Year</dt>
+                            <dd class="break-words">{{ page.dataset.publication_year }}</dd>
                         </div>
                     {% endif %}
                     {% if page.dataset.doi %}
-                        <div class="py-2 flex gap-4">
-                            <dt class="font-medium w-32 shrink-0">DOI</dt>
-                            <dd><a href="{{ page.dataset.doi }}" class="text-blue-600">{{ page.dataset.doi }}</a></dd>
+                        <div class="py-2 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                            <dt class="font-medium sm:w-32 sm:shrink-0">DOI</dt>
+                            <dd class="break-words"><a href="{{ page.dataset.doi }}" class="text-blue-600">{{ page.dataset.doi }}</a></dd>
                         </div>
                     {% endif %}
                     {% if page.dataset.license %}
-                        <div class="py-2 flex gap-4">
-                            <dt class="font-medium w-32 shrink-0">License</dt>
-                            <dd>{{ page.dataset.get_license_display }}</dd>
+                        <div class="py-2 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                            <dt class="font-medium sm:w-32 sm:shrink-0">License</dt>
+                            <dd class="break-words">{{ page.dataset.get_license_display }}</dd>
                         </div>
                     {% endif %}
                     {% if page.dataset.attribution %}
-                        <div class="py-2 flex gap-4">
-                            <dt class="font-medium w-32 shrink-0">Attribution</dt>
-                            <dd>{{ page.dataset.attribution|linebreaks }}</dd>
+                        <div class="py-2 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                            <dt class="font-medium sm:w-32 sm:shrink-0">Attribution</dt>
+                            <dd class="break-words">{{ page.dataset.attribution|linebreaks }}</dd>
                         </div>
                     {% endif %}
                 </dl>

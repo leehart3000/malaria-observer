@@ -17,6 +17,19 @@ SORT_FIELDS = [field for field, _ in SORTABLE_COLUMNS]
 
 GENERAL_SEARCH_FIELDS = ["sample", "study", "country", "sample_type", "ena"]
 
+LEVEL_FIELDS = {
+    "country": {
+        "lat": "country_latitude",
+        "lon": "country_longitude",
+        "label": "country",
+    },
+    "admin1": {
+        "lat": "admin_level_1_latitude",
+        "lon": "admin_level_1_longitude",
+        "label": "admin_level_1",
+    },
+}
+
 # Nullable columns checked by the "Missing" checkbox, handled directly
 # in the view (see ExplorerTableView.get_queryset) rather than through
 # this FilterSet -- a plain presence/absence checkbox interacts

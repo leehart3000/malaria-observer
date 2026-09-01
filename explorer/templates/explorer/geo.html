@@ -1,13 +1,68 @@
 {% extends "core/layout.html" %}
+{% load core_extras %}
 
 {% block title %}Map: {{ dataset.name }}{% endblock %}
 
 {% block body %}
-<div class="max-w-3xl mx-auto py-16 px-4 text-center">
-    <h1 class="text-2xl font-bold mb-2">{{ dataset.name }}</h1>
-    <p class="text-gray-600">The map view for this dataset is coming soon.</p>
-    <a href="{% url 'explorer_table' %}?set={{ dataset.dataset_id }}" class="inline-block mt-4 text-blue-600">
-        View data in table →
-    </a>
+<div class="max-w-7xl mx-auto pt-2 pb-8 px-4">
+
+    <h1 class="text-2xl font-bold mb-2">Dataset: {{ dataset.name }}</h1>
+
+    {% explorer_nav_buttons dataset "geo" %}
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@3.0.2/Control.FullScreen.css">
+
+    {% sample_filter_form dataset filter reset_query show_level_selector=True %}
+
+    <p class="text-gray-600 mb-4">
+        {% if is_filtered %}
+            Showing {{ locations|length }} location{{ locations|length|pluralize }} matching the filter.
+        {% else %}
+            Showing {{ locations|length }} location{{ locations|length|pluralize }}.
+        {% endif %}
+    </p>
+
+    {% if locations %}
+        <div id="map" style="height: 600px;" class="rounded border"></div>
+    {% else %}
+        <p class="text-gray-500 py-8 text-center">No location data available at this level for the current filter.</p>
+    {% endif %}
+
+    {{ locations_data|json_script:"locations-data" }}
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen@3.0.2/Control.FullScreen.js"></script>
+    <script>
+        (function () {
+            var dataEl = document.getElementById("locations-data");
+            if (!dataEl) return;
+            var locations = JSON.parse(dataEl.textContent);
+            if (!locations.length) return;
+
+            var map = L.map("map", { fullscreenControl: true });
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            var bounds = [];
+            locations.forEach(function (loc) {
+                var radius = Math.max(6, Math.min(30, Math.sqrt(loc.count) * 2));
+                var marker = L.circleMarker([loc.lat, loc.lon], {
+                    radius: radius,
+                    color: "#2563eb",
+                    fillColor: "#3b82f6",
+                    fillOpacity: 0.6,
+                    weight: 1
+                });
+                marker.bindPopup(loc.label + ": " + loc.count + " sample" + (loc.count === 1 ? "" : "s"));
+                marker.addTo(map);
+                bounds.push([loc.lat, loc.lon]);
+            });
+
+            map.fitBounds(bounds, { padding: [20, 20] });
+        })();
+    </script>
 </div>
 {% endblock %}

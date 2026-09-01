@@ -2,19 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ page.title }}{% endblock %}</title>
 
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <!-- htmx -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>[x-cloak] { display: none; }</style>
 </head>
 
 <body class="bg-gray-50 text-gray-900">
+    {% load core_extras %}
+    <nav x-data="{ open: false }" class="bg-white border-b px-4 py-3">
+        <div class="flex items-center justify-between">
+            <a href="{% home_page_url %}" class="font-bold text-lg text-gray-900">Malaria Observer</a>
+            <button @click="open = !open" class="sm:hidden p-2" aria-label="Toggle navigation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div class="hidden sm:flex items-center gap-6">
+                {% dataset_index_url as datasets_url %}
+                {% if datasets_url %}<a href="{{ datasets_url }}" class="text-gray-600 hover:text-blue-600">Datasets</a>{% endif %}
+                {% contact_page_url as contact_url %}
+                {% if contact_url %}<a href="{{ contact_url }}" class="text-gray-600 hover:text-blue-600">Contact</a>{% endif %}
+            </div>
+        </div>
+        <div x-show="open" x-cloak class="sm:hidden mt-3 flex flex-col gap-3">
+            {% if datasets_url %}<a href="{{ datasets_url }}" class="text-gray-600 hover:text-blue-600">Datasets</a>{% endif %}
+            {% if contact_url %}<a href="{{ contact_url }}" class="text-gray-600 hover:text-blue-600">Contact</a>{% endif %}
+        </div>
+    </nav>
+
     {% block body %}{% endblock %}
+
+    <footer class="border-t bg-white mt-12">
+        <div class="max-w-5xl mx-auto px-4 py-6 text-sm text-gray-500 flex flex-wrap gap-x-6 gap-y-2 justify-between">
+            <p>&copy; {% now "Y" %} Malaria Observer</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
+                {% if contact_url %}<a href="{{ contact_url }}" class="hover:text-blue-600">Contact</a>{% endif %}
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

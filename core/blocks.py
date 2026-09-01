@@ -21,7 +21,7 @@ class NarrativeImageBlock(ImageChooserBlock):
 
 
 # Reusable "paragraphs and images" block set, for any page model that
-# needs simple narrative content (e.g. StudyPage, ArticlePage).
+# needs simple narrative content (e.g. ArticlePage).
 NARRATIVE_BLOCKS = [
     ("paragraph", ParagraphBlock()),
     ("image", NarrativeImageBlock()),

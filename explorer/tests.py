@@ -460,3 +460,186 @@ class ImportDatasetCommandTests(TestCase):
     def test_missing_file_raises_clear_error(self):
         with self.assertRaises(CommandError):
             call_command("import_dataset", "pf7", "/tmp/definitely-does-not-exist.txt")
+
+
+class ExplorerGeoViewTests(TestCase):
+    def setUp(self):
+        self.dataset = cast(Dataset, DatasetFactory(dataset_id="pf7", name="Pf7"))
+        self.url = reverse("explorer_geo")
+
+    def test_aggregates_by_country_with_counts(self):
+        SampleRecordFactory.create_batch(
+            3,
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory.create_batch(
+            2,
+            dataset=self.dataset,
+            country="Vietnam",
+            country_latitude=14.0,
+            country_longitude=108.0,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7"})
+        locations = {
+            loc["label"]: loc["count"] for loc in response.context["locations_data"]
+        }
+
+        self.assertEqual(locations, {"Ghana": 3, "Vietnam": 2})
+
+    def test_defaults_to_country_level_when_not_specified(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+            admin_level_1="Ashanti",
+            admin_level_1_latitude=6.7,
+            admin_level_1_longitude=-1.6,
+        )
+        response = self.client.get(self.url, {"set": "pf7"})
+        self.assertEqual(response.context["level"], "country")
+        self.assertEqual(response.context["locations_data"][0]["label"], "Ghana")
+
+    def test_invalid_level_falls_back_to_country(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        response = self.client.get(
+            self.url, {"set": "pf7", "level": "not_a_real_level"}
+        )
+        self.assertEqual(response.context["level"], "country")
+
+    def test_admin1_level_groups_by_finer_location(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+            admin_level_1="Ashanti",
+            admin_level_1_latitude=6.7,
+            admin_level_1_longitude=-1.6,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+            admin_level_1="Volta",
+            admin_level_1_latitude=6.9,
+            admin_level_1_longitude=0.5,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7", "level": "admin1"})
+        locations = {loc["label"] for loc in response.context["locations_data"]}
+
+        self.assertEqual(locations, {"Ashanti", "Volta"})
+
+    def test_excludes_rows_with_null_coordinates_at_chosen_level(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country=None,
+            country_latitude=None,
+            country_longitude=None,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7"})
+        self.assertEqual(len(response.context["locations_data"]), 1)
+
+    def test_respects_general_text_filter(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            sample="QN0001",
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            sample="QN0002",
+            country="Vietnam",
+            country_latitude=14.0,
+            country_longitude=108.0,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7", "q": "Ghana"})
+        locations = {loc["label"] for loc in response.context["locations_data"]}
+
+        self.assertEqual(locations, {"Ghana"})
+        self.assertTrue(response.context["is_filtered"])
+
+    def test_respects_qc_pass_filter(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            qc_pass=True,
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Vietnam",
+            qc_pass=False,
+            country_latitude=14.0,
+            country_longitude=108.0,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7", "qc_pass": "false"})
+        locations = {loc["label"] for loc in response.context["locations_data"]}
+
+        self.assertEqual(locations, {"Vietnam"})
+
+    def test_respects_missingness_filter(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            year=2014,
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Vietnam",
+            year=None,
+            country_latitude=14.0,
+            country_longitude=108.0,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7", "missingness": "with"})
+        locations = {loc["label"] for loc in response.context["locations_data"]}
+
+        self.assertEqual(locations, {"Vietnam"})
+
+    def test_unfiltered_request_shows_all_locations(self):
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Ghana",
+            country_latitude=6.0,
+            country_longitude=-1.0,
+        )
+        SampleRecordFactory(
+            dataset=self.dataset,
+            country="Vietnam",
+            country_latitude=14.0,
+            country_longitude=108.0,
+        )
+
+        response = self.client.get(self.url, {"set": "pf7"})
+        self.assertFalse(response.context["is_filtered"])
+        self.assertEqual(len(response.context["locations_data"]), 2)
+
+    def test_unknown_dataset_returns_404(self):
+        response = self.client.get(self.url, {"set": "not-a-real-dataset"})
+        self.assertEqual(response.status_code, 404)
