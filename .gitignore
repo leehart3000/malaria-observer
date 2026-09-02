@@ -497,14 +497,11 @@ playwright/.local-browsers/
 # Sphinx Documentation builds
 docs/_build/
 
-# Data backups
+# Project files
 /data_backups/
-
-# Data resources
 /data_resources/
-
-# Data curation
 /data_curation/
+/design_resources/
 
 # Static files
 /static/
