@@ -6,16 +6,16 @@
 {% block body %}
 <div class="max-w-7xl mx-auto pt-2 pb-8 px-4">
 
-    <h1 class="text-2xl font-bold mb-2">Dataset: {{ dataset.name }}</h1>
+    <h1 class="text-2xl font-bold mb-2 text-ink dark:text-inkdark">Dataset: {{ dataset.name }}</h1>
 
     {% explorer_nav_buttons dataset "geo" %}
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@3.0.2/Control.FullScreen.css">
 
     {% sample_filter_form dataset filter reset_query show_level_selector=True %}
 
-    <p class="text-gray-600 mb-4">
+    <p class="text-gray-500 dark:text-gray-400 mb-4">
         {% if is_filtered %}
             Showing {{ locations|length }} location{{ locations|length|pluralize }} matching the filter.
         {% else %}
@@ -24,9 +24,9 @@
     </p>
 
     {% if locations %}
-        <div id="map" style="height: 600px;" class="rounded border"></div>
+        <div id="map" style="height: 600px;" class="rounded border border-border dark:border-border-dark"></div>
     {% else %}
-        <p class="text-gray-500 py-8 text-center">No location data available at this level for the current filter.</p>
+        <p class="text-gray-500 dark:text-gray-400 py-8 text-center">No location data available at this level for the current filter.</p>
     {% endif %}
 
     {{ locations_data|json_script:"locations-data" }}
@@ -51,8 +51,8 @@
                 var radius = Math.max(6, Math.min(30, Math.sqrt(loc.count) * 2));
                 var marker = L.circleMarker([loc.lat, loc.lon], {
                     radius: radius,
-                    color: "#2563eb",
-                    fillColor: "#3b82f6",
+                    color: "#600B0B",
+                    fillColor: "#8C1010",
                     fillOpacity: 0.6,
                     weight: 1
                 });

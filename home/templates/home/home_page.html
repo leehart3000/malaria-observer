@@ -5,14 +5,14 @@
     <div class="flex flex-wrap gap-3 mt-6">
         {% dataset_index_url as datasets_url %}
         {% if datasets_url %}
-            <a href="{{ datasets_url }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <a href="{{ datasets_url }}" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
                 {% include "core/includes/icons/table.html" %}
                 Datasets
             </a>
         {% endif %}
         {% article_index_url as articles_url %}
         {% if articles_url %}
-            <a href="{{ articles_url }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <a href="{{ articles_url }}" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
                 {% include "core/includes/icons/file-text.html" %}
                 Articles
             </a>

@@ -5,22 +5,22 @@
         {% if children %}
             <ul class="space-y-6 mt-8">
                 {% for child in children %}
-                    <li>
-                        <a href="{{ child.url }}" class="text-blue-600 hover:underline text-lg font-medium">
+                    <li class="border-b border-border dark:border-border-dark pb-6">
+                        <a href="{{ child.url }}" class="text-blood hover:text-blood-hover hover:underline decoration-1 text-lg font-medium">
                             {{ child.title }}
                         </a>
                         {% if child.summary %}
-                            <p class="text-gray-600 mt-1">{{ child.summary }}</p>
+                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ child.summary }}</p>
                         {% endif %}
                         {% if child.dataset.attribution %}
-                            <p class="text-gray-600 mt-1">{{ child.dataset.attribution }}</p>
+                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ child.dataset.attribution }}</p>
                         {% endif %}
                         {% dataset_action_buttons child.dataset %}
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="mt-8">No datasets have been published yet.</p>
+            <p class="mt-8 text-gray-600 dark:text-gray-400">No datasets have been published yet.</p>
         {% endif %}
     {% endwith %}
 {% endblock %}
