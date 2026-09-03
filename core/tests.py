@@ -12,14 +12,14 @@ from home.models import HomePage
 
 
 class ContactPageTests(WagtailPageTestCase):
-    def test_contact_page_renders_intro(self):
+    def test_contact_page_renders_body(self):
         root = Site.objects.get(is_default_site=True).root_page
         home = HomePage(title="Welcome")
         root.add_child(instance=home)
         home.save_revision().publish()
 
         contact = ContactPage(
-            title="Contact", intro=[("paragraph", RichText("<p>Get in touch.</p>"))]
+            title="Contact", body=[("paragraph", RichText("<p>Get in touch.</p>"))]
         )
         home.add_child(instance=contact)
         contact.save_revision().publish()

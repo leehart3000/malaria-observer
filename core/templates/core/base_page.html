@@ -4,9 +4,9 @@
 <div class="max-w-3xl mx-auto py-10 px-4">
     <h1 class="text-3xl font-bold mb-6">{{ page.title }}</h1>
 
-    {% if page.intro %}
-        <div class="prose dark:prose-invert prose-p:text-gray-500 dark:prose-p:text-gray-400">
-            {{ page.intro }}
+    {% if page.body %}
+        <div class="prose dark:prose-invert max-w-none prose-p:text-gray-500 dark:prose-p:text-gray-400 prose-a:text-blood prose-a:font-normal prose-a:no-underline hover:prose-a:underline prose-a:decoration-1 dark:prose-a:text-inkdark dark:prose-a:font-bold dark:prose-a:underline dark:hover:prose-a:text-navy-light">
+            {{ page.body }}
         </div>
     {% endif %}
 

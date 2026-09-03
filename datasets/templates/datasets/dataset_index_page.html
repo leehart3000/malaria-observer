@@ -6,14 +6,17 @@
             <ul class="space-y-6 mt-8">
                 {% for child in children %}
                     <li class="border-b border-border dark:border-border-dark pb-6">
-                        <a href="{{ child.url }}" class="text-blood hover:text-blood-hover hover:underline decoration-1 text-lg font-medium">
+                        <a href="{{ child.url }}" class="inline-flex items-center gap-2 text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light text-lg font-medium">
+                            {% include "core/includes/icons/file-text.html" %}
                             {{ child.title }}
                         </a>
                         {% if child.summary %}
-                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ child.summary }}</p>
+                            <div class="text-gray-500 dark:text-gray-400 mt-1">{{ child.summary }}</div>
                         {% endif %}
                         {% if child.dataset.attribution %}
-                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ child.dataset.attribution }}</p>
+                            <div class="mt-2 p-3 bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded text-gray-500 dark:text-gray-400">
+                                {{ child.dataset.attribution }}
+                            </div>
                         {% endif %}
                         {% dataset_action_buttons child.dataset %}
                     </li>

@@ -3,7 +3,7 @@ from .base_page import BasePage as BasePage
 
 class ContactPage(BasePage):
     """A simple general content page for contact information, editable
-    via the `intro` StreamField inherited from BasePage. No extra
+    via the `body` StreamField inherited from BasePage. No extra
     fields are needed -- this exists purely to give editors a page to
     write contact details into."""
 

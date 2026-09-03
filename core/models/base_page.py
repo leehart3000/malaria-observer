@@ -8,8 +8,8 @@ from core.blocks import NARRATIVE_BLOCKS
 class BasePage(Page):
     is_creatable = False
 
-    intro = StreamField(NARRATIVE_BLOCKS, blank=True, use_json_field=True)
+    body = StreamField(NARRATIVE_BLOCKS, blank=True, use_json_field=True)
 
     content_panels = Page.content_panels + [
-        FieldPanel("intro"),
+        FieldPanel("body"),
     ]

@@ -73,13 +73,13 @@ class ArticlePageTests(WagtailPageTestCase):
         )
         self.index.save_revision().publish()
 
-    def test_article_page_renders_intro(self):
+    def test_article_page_renders_body(self):
         article = cast(
             ArticlePage,
             ArticlePageFactory(
                 title="My Article",
                 parent=self.index,
-                intro=[("paragraph", RichText("<p>Article body text.</p>"))],
+                body=[("paragraph", RichText("<p>Article body text.</p>"))],
             ),
         )
         article.save_revision().publish()

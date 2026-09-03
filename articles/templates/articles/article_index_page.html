@@ -7,11 +7,12 @@
             <ul class="space-y-6 mt-8">
                 {% for child in children %}
                     <li>
-                        <a href="{{ child.url }}" class="text-blood hover:text-blood-hover hover:underline decoration-1 text-lg font-medium">
+                        <a href="{{ child.url }}" class="inline-flex items-center gap-2 text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light text-lg font-medium">
+                            {% include "core/includes/icons/file-text.html" %}
                             {{ child.title }}
                         </a>
                         {% if child.summary %}
-                            <div class="text-gray-500 dark:text-gray-400 mt-1">{{ child.summary|richtext }}</div>
+                            <div class="text-gray-500 dark:text-gray-400 mt-1">{{ child.summary }}</div>
                         {% endif %}
                     </li>
                 {% endfor %}

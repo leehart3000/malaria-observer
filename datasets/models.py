@@ -1,9 +1,11 @@
 from django.core.validators import RegexValidator
 from django.db import models
 from wagtail.admin.panels import FieldPanel
+from wagtail.fields import StreamField
 from wagtail.search import index
 from wagtail.snippets.models import register_snippet
 
+from core.blocks import SUMMARY_BLOCKS
 from core.constants import LICENSE_CHOICES
 from core.models import BasePage
 
@@ -117,7 +119,8 @@ class DatasetPage(BasePage):
         on_delete=models.PROTECT,
         related_name="page",
     )
-    summary = models.TextField(blank=True)
+
+    summary = StreamField(SUMMARY_BLOCKS, blank=True, use_json_field=True, max_num=1)
 
     content_panels = BasePage.content_panels + [
         FieldPanel("dataset"),

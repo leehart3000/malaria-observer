@@ -1,45 +1,59 @@
 {% extends "core/base_page.html" %}{% load core_extras %}
 
 {% block content %}
-    <div class="prose dark:prose-invert max-w-none">
-        {% if page.dataset %}
-            <div class="mt-6 p-4 bg-white dark:bg-surface-dark rounded border border-border dark:border-border-dark">
-                <dl class="divide-y divide-border dark:divide-border-dark">
-                    {% if page.dataset.authors %}
-                        <div class="py-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                            <dt class="font-medium sm:w-32 sm:shrink-0">Authors</dt>
-                            <dd class="break-words">{{ page.dataset.authors }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if page.dataset.publication_year %}
-                        <div class="py-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                            <dt class="font-medium sm:w-32 sm:shrink-0">Year</dt>
-                            <dd class="break-words">{{ page.dataset.publication_year }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if page.dataset.doi %}
-                        <div class="py-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                            <dt class="font-medium sm:w-32 sm:shrink-0">DOI</dt>
-                            <dd class="break-words"><a href="{{ page.dataset.doi }}" class="text-blood hover:text-blood-hover">{{ page.dataset.doi }}</a></dd>
-                        </div>
-                    {% endif %}
-                    {% if page.dataset.license %}
-                        <div class="py-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                            <dt class="font-medium sm:w-32 sm:shrink-0">License</dt>
-                            <dd class="break-words">{{ page.dataset.get_license_display }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if page.dataset.attribution %}
-                        <div class="py-2 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
-                            <dt class="font-medium sm:w-32 sm:shrink-0">Attribution</dt>
-                            <dd class="break-words">{{ page.dataset.attribution|linebreaks }}</dd>
-                        </div>
-                    {% endif %}
-                </dl>
-            </div>
-            {% dataset_action_buttons page.dataset %}
-        {% endif %}
+    {% if page.dataset %}
+        <div class="mt-6 px-4 py-1 bg-white dark:bg-surface-dark rounded border border-border dark:border-border-dark">
+            <dl class="divide-y divide-border dark:divide-border-dark">
+                {% if page.dataset.authors %}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <dt class="font-medium sm:w-32 sm:shrink-0">Authors</dt>
+                        <dd class="break-words">{{ page.dataset.authors }}</dd>
+                    </div>
+                {% endif %}
+                {% if page.dataset.publication_year %}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <dt class="font-medium sm:w-32 sm:shrink-0">Year</dt>
+                        <dd class="break-words">{{ page.dataset.publication_year }}</dd>
+                    </div>
+                {% endif %}
+                {% if page.dataset.doi %}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <dt class="font-medium sm:w-32 sm:shrink-0">DOI</dt>
+                        <dd class="break-words"><a href="{{ page.dataset.doi }}" class="text-blood hover:text-blood-hover">{{ page.dataset.doi }}</a></dd>
+                    </div>
+                {% endif %}
+                {% if page.dataset.license %}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <dt class="font-medium sm:w-32 sm:shrink-0">License</dt>
+                        <dd class="break-words">{{ page.dataset.get_license_display }}</dd>
+                    </div>
+                {% endif %}
+                {% if page.dataset.attribution %}
+                    <div class="py-2 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
+                        <dt class="font-medium sm:w-32 sm:shrink-0">Attribution</dt>
+                        <dd class="break-words text-gray-500 dark:text-gray-400">{{ page.dataset.attribution|linebreaks }}</dd>
+                    </div>
+                {% endif %}
+            </dl>
+        </div>
 
-        {{ block.super }}
-    </div>
+        <p class="font-medium text-sm text-gray-500 dark:text-gray-400 mt-6 mb-2">Explore this dataset</p>
+        {% dataset_action_buttons page.dataset %}
+
+        {% if page.dataset.related_articles.exists %}
+        <div class="mt-6">
+            <p class="font-medium text-sm text-gray-500 dark:text-gray-400 mb-2">Related articles</p>
+            <div class="flex flex-wrap gap-2">
+                {% for article in page.dataset.related_articles.all %}
+                    <a href="{{ article.url }}" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
+                        {% include "core/includes/icons/file-text.html" %}
+                        {{ article.title }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    {{ block.super }}
 {% endblock %}

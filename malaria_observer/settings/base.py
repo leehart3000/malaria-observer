@@ -89,6 +89,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.google_analytics",
             ],
         },
     },
@@ -105,6 +106,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env("ENVIRONMENT", default="dev")
+GOOGLE_ANALYTICS_ID = env("GOOGLE_ANALYTICS_ID", default="")
 SECRET_KEY = env("SECRET_KEY")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 

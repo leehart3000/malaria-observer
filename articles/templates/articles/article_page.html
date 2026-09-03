@@ -1,1 +1,23 @@
 {% extends "core/base_page.html" %}
+{% block content %}
+{% if page.related_datasets.exists %}
+<div class="mt-6">
+    <p class="font-medium text-sm text-gray-500 dark:text-gray-400 mb-2">Related datasets</p>
+    <div class="flex flex-wrap gap-2">
+        {% for dataset in page.related_datasets.all %}
+            {% if dataset.page %}
+                <a href="{{ dataset.page.url }}" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
+                    {% include "core/includes/icons/table.html" %}
+                    {{ dataset.name }}
+                </a>
+            {% else %}
+                <a href="{% url 'explorer_table' %}?set={{ dataset.dataset_id }}" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
+                    {% include "core/includes/icons/table.html" %}
+                    {{ dataset.name }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

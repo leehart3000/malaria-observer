@@ -1,5 +1,6 @@
 from django import template
 
+from core.markdown import render_markdown
 from datasets.models import DatasetIndexPage
 from home.models import HomePage
 
@@ -69,3 +70,16 @@ def article_index_url():
 
     page = ArticleIndexPage.objects.live().first()
     return page.url if page else None
+
+
+@register.simple_tag
+def privacy_page_url():
+    from core.models import PrivacyPage
+
+    page = PrivacyPage.objects.live().first()
+    return page.url if page else None
+
+
+@register.filter(name="markdown")
+def markdown_filter(value):
+    return render_markdown(value)

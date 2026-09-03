@@ -1,9 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ dark: localStorage.getItem('theme') === 'dark' }" x-init="$watch('dark', v => { localStorage.setItem('theme', v ? 'dark' : 'light'); document.documentElement.classList.toggle('dark', v) }); document.documentElement.classList.toggle('dark', dark)">
+<html lang="en" x-data="{ dark: document.documentElement.classList.contains('dark') }" x-init="$watch('dark', v => { localStorage.setItem('theme', v ? 'dark' : 'light'); document.documentElement.classList.toggle('dark', v) })">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ page.title }}{% endblock %}</title>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+    {% if GOOGLE_ANALYTICS_ID %}
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+            'analytics_storage': 'denied'
+        });
+        if (localStorage.getItem('cookie_consent') === 'accepted') {
+            gtag('consent', 'update', { 'analytics_storage': 'granted' });
+        }
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ GOOGLE_ANALYTICS_ID }}"></script>
+    <script>
+        gtag('js', new Date());
+        gtag('config', '{{ GOOGLE_ANALYTICS_ID }}');
+    </script>
+    {% endif %}
 
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
@@ -68,10 +92,10 @@
     {% load core_extras %}{% load static %}
     <nav x-data="{ open: false }" class="bg-white dark:bg-surface-dark border-b border-border dark:border-border-dark px-4 py-3">
         <div class="flex items-center justify-between">
-            <a href="{% home_page_url %}" class="flex items-center gap-3">
+            <a href="{% home_page_url %}" class="group flex items-center gap-3">
                 <img src="{% static 'svg/logo.svg' %}" alt="Malaria Observer" class="h-9 w-9">
-                <span class="font-serif font-semibold text-lg text-ink dark:text-inkdark">
-                    malaria<span class="text-blood mx-1">·</span><span class="font-medium text-gray-500 dark:text-gray-400">observer</span>
+                <span class="font-serif font-semibold text-lg text-ink dark:text-inkdark group-hover:text-blood dark:group-hover:text-navy-light">
+                    malaria<span class="text-blood mx-1">·</span><span class="font-medium text-gray-500 dark:text-gray-400 group-hover:text-blood dark:group-hover:text-navy-light">observer</span>
                 </span>
             </a>
             <button @click="open = !open" class="sm:hidden p-2 text-ink dark:text-inkdark" aria-label="Toggle navigation">
@@ -105,17 +129,57 @@
         <div class="max-w-5xl mx-auto px-4 py-6 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-6 gap-y-2 justify-between items-center">
             <p>&copy; {% now "Y" %} Malaria Observer</p>
             <div class="flex flex-wrap gap-x-6 gap-y-2 items-center">
-                <button
-                    @click="dark = !dark"
-                    class="font-mono text-xs uppercase tracking-wide border border-border dark:border-border-dark rounded px-3 py-1 hover:text-blood dark:hover:text-navy-light"
-                    aria-label="Toggle dark mode"
-                >
-                    <span x-show="!dark">◑ Dark</span>
-                    <span x-show="dark" x-cloak>☀ Light</span>
-                </button>
+            <button
+                @click="dark = !dark"
+                class="inline-flex items-center gap-1.5 hover:text-blood dark:hover:text-navy-light"
+                aria-label="Toggle dark mode"
+            >
+                <span x-show="!dark" class="inline-flex items-center gap-1.5">
+                    {% include "core/includes/icons/moon.html" %}
+                    Dark
+                </span>
+                <span x-show="dark" x-cloak class="inline-flex items-center gap-1.5">
+                    {% include "core/includes/icons/sun.html" %}
+                    Light
+                </span>
+            </button>
+                {% privacy_page_url as privacy_url %}
+                {% if privacy_url %}<a href="{{ privacy_url }}" class="hover:text-blood dark:hover:text-navy-light">Privacy</a>{% endif %}
                 {% if contact_url %}<a href="{{ contact_url }}" class="hover:text-blood dark:hover:text-navy-light">Contact</a>{% endif %}
             </div>
         </div>
     </footer>
+
+    {% if GOOGLE_ANALYTICS_ID %}
+    <div
+        x-data="{ show: !localStorage.getItem('cookie_consent') }"
+        x-show="show"
+        x-cloak
+        class="bg-white dark:bg-surface-dark border-t border-border dark:border-border-dark px-4 py-4"
+    >
+        <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
+                We use Google Analytics to understand how visitors use this site. We only do this with your consent.
+                <a href="{% privacy_page_url %}" class="text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light">Our privacy policy</a>
+            </p>
+            <div class="flex gap-3 shrink-0">
+                <button
+                    @click="localStorage.setItem('cookie_consent', 'declined'); show = false"
+                    class="inline-flex items-center gap-2 text-sm border border-border dark:border-border-dark text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded hover:bg-surface-alt dark:hover:bg-surface-dark-alt"
+                >
+                    {% include "core/includes/icons/x.html" %}
+                    Decline
+                </button>
+                <button
+                    @click="localStorage.setItem('cookie_consent', 'accepted'); gtag('consent', 'update', { analytics_storage: 'granted' }); show = false"
+                    class="inline-flex items-center gap-2 text-sm bg-blood text-white px-3 py-1.5 rounded hover:bg-blood-hover"
+                >
+                    {% include "core/includes/icons/check.html" %}
+                    Accept
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </body>
 </html>
