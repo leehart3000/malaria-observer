@@ -44,21 +44,20 @@ class ArticleIndexPageTests(WagtailPageTestCase):
         response = self.client.get(self.index.url)
         self.assertContains(response, "No articles have been published yet.")
 
+    def test_summary_renders_as_formatted_html_not_raw_markup(self):
+        article = cast(
+            ArticlePage,
+            ArticlePageFactory(
+                title="Formatted Article",
+                parent=self.index,
+                summary=[("paragraph", RichText("<p>A rich summary.</p>"))],
+            ),
+        )
+        article.save_revision().publish()
 
-def test_summary_renders_as_formatted_html_not_raw_markup(self):
-    article = cast(
-        ArticlePage,
-        ArticlePageFactory(
-            title="Formatted Article",
-            parent=self.index,
-            summary=[("paragraph", RichText("<p>A rich summary.</p>"))],
-        ),
-    )
-    article.save_revision().publish()
-
-    response = self.client.get(self.index.url)
-    self.assertContains(response, "<p>A rich summary.</p>", html=True)
-    self.assertNotContains(response, "data-block-key")
+        response = self.client.get(self.index.url)
+        self.assertContains(response, "<p>A rich summary.</p>", html=True)
+        self.assertNotContains(response, "data-block-key")
 
 
 class ArticlePageTests(WagtailPageTestCase):
@@ -89,25 +88,24 @@ class ArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Article body text.")
 
+    def test_article_page_does_not_show_summary_on_its_own_page(self):
+        article = cast(
+            ArticlePage,
+            ArticlePageFactory(
+                title="My Article",
+                parent=self.index,
+                summary=[
+                    (
+                        "paragraph",
+                        RichText("<p>Summary text that should not appear here.</p>"),
+                    )
+                ],
+            ),
+        )
+        article.save_revision().publish()
 
-def test_article_page_does_not_show_summary_on_its_own_page(self):
-    article = cast(
-        ArticlePage,
-        ArticlePageFactory(
-            title="My Article",
-            parent=self.index,
-            summary=[
-                (
-                    "paragraph",
-                    RichText("<p>Summary text that should not appear here.</p>"),
-                )
-            ],
-        ),
-    )
-    article.save_revision().publish()
-
-    response = self.client.get(article.url)
-    self.assertNotContains(response, "Summary text that should not appear here.")
+        response = self.client.get(article.url)
+        self.assertNotContains(response, "Summary text that should not appear here.")
 
     def test_article_page_cannot_be_created_at_home(self):
         self.assertFalse(ArticlePage.can_create_at(self.home))
