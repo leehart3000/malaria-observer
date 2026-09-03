@@ -1,7 +1,9 @@
 {% extends "core/base_page.html" %}
-{% load wagtailcore_tags %}
+{% load wagtailcore_tags core_extras %}
 
 {% block content %}
+    {% include "core/includes/search_box.html" with search_type="articles" search_placeholder="Search articles..." %}
+
     {% with children=page.get_children.live.specific %}
         {% if children %}
             <ul class="space-y-6 mt-8">

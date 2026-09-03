@@ -1,38 +1,35 @@
 import logging
 
+from django.apps import apps
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpRequest
 from django.template.response import TemplateResponse
 from wagtail.models import Page
 
-# To enable logging of search queries for use with the "Promoted search results" module
-# <https://docs.wagtail.org/en/stable/reference/contrib/searchpromotions.html>
-# uncomment the following line and the lines indicated in the search function
-# (after adding wagtail.contrib.search_promotions to INSTALLED_APPS):
-
-# from wagtail.contrib.search_promotions.models import Query
-
 logger = logging.getLogger(__name__)
+
+CONTENT_TYPE_MODELS = {
+    "articles": "articles.ArticlePage",
+    "datasets": "datasets.DatasetPage",
+}
 
 
 def search(request: HttpRequest) -> TemplateResponse:
-    logger.info("Showing search results for query: %s", request.GET.get("query", None))
     search_query = request.GET.get("query", None)
+    content_type = request.GET.get("type", None)
     page = request.GET.get("page", 1)
 
-    # Search
+    queryset = Page.objects.live()
+    if content_type:
+        model_path = CONTENT_TYPE_MODELS.get(content_type)
+        if model_path:
+            queryset = queryset.type(apps.get_model(model_path))
+
     if search_query:
-        search_results = Page.objects.live().search(search_query)
-
-        # To log this query for use with the "Promoted search results" module:
-
-        # query = Query.get(search_query)
-        # query.add_hit()
-
+        search_results = queryset.search(search_query)
     else:
         search_results = Page.objects.none()
 
-    # Pagination
     paginator = Paginator(search_results, 10)
     try:
         search_results = paginator.page(page)
@@ -47,5 +44,6 @@ def search(request: HttpRequest) -> TemplateResponse:
         {
             "search_query": search_query,
             "search_results": search_results,
+            "content_type": content_type,
         },
     )

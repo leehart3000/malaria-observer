@@ -127,6 +127,10 @@ class DatasetPage(BasePage):
         FieldPanel("summary"),
     ]
 
+    search_fields = BasePage.search_fields + [
+        index.SearchField("summary"),
+    ]
+
     def save(self, *args, **kwargs):
         # Keep the page's slug in lockstep with its Dataset's identifier,
         # so /datasets/<dataset_id>/ is always correct and never depends

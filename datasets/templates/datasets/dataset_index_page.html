@@ -1,6 +1,8 @@
 {% extends "core/base_page.html" %}{% load core_extras %}
 
 {% block content %}
+    {% include "core/includes/search_box.html" with search_type="datasets" search_placeholder="Search dataset pages..." %}
+
     {% with children=page.get_children.live.specific %}
         {% if children %}
             <ul class="space-y-6 mt-8">

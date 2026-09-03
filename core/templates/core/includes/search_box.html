@@ -1,0 +1,8 @@
+<form action="{% url 'search' %}" method="get" class="flex gap-2 mb-8">
+    <input type="hidden" name="type" value="{{ search_type }}">
+    <input type="text" name="query" placeholder="{{ search_placeholder }}" class="flex-1 border border-border dark:border-border-dark rounded px-3 py-2 bg-white dark:bg-surface-dark text-ink dark:text-inkdark">
+    <button type="submit" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
+        {% include "core/includes/icons/search.html" %}
+        Search
+    </button>
+</form>

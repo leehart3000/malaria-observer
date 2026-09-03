@@ -1,6 +1,7 @@
 from modelcluster.fields import ParentalManyToManyField
 from wagtail.admin.panels import FieldPanel
 from wagtail.fields import StreamField
+from wagtail.search import index
 
 from core.blocks import SUMMARY_BLOCKS
 from core.models import BasePage
@@ -38,4 +39,8 @@ class ArticlePage(BasePage):
     content_panels = BasePage.content_panels + [
         FieldPanel("summary"),
         FieldPanel("related_datasets"),
+    ]
+
+    search_fields = BasePage.search_fields + [
+        index.SearchField("summary"),
     ]

@@ -1,38 +1,49 @@
-{% extends "base.html" %}
-{% load static wagtailcore_tags %}
-
-{% block body_class %}template-searchresults{% endblock %}
+{% extends "core/layout.html" %}
+{% load wagtailcore_tags %}
 
 {% block title %}Search{% endblock %}
 
-{% block content %}
-<h1>Search</h1>
+{% block body %}
+<div class="max-w-3xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold mb-6 text-ink dark:text-inkdark">Search</h1>
 
-<form action="{% url 'search' %}" method="get">
-    <input type="text" name="query"{% if search_query %} value="{{ search_query }}"{% endif %}>
-    <input type="submit" value="Search" class="button">
-</form>
+    <form action="{% url 'search' %}" method="get" class="flex gap-2 mb-8">
+        <input type="text" name="query" placeholder="Search..." {% if search_query %}value="{{ search_query }}"{% endif %} class="flex-1 border border-border dark:border-border-dark rounded px-3 py-2 bg-white dark:bg-surface-dark text-ink dark:text-inkdark">
+        <select name="type" class="border border-border dark:border-border-dark rounded px-2 py-1 bg-white dark:bg-surface-dark text-ink dark:text-inkdark">
+            <option value="" {% if not content_type %}selected{% endif %}></option>
+            <option value="articles" {% if content_type == "articles" %}selected{% endif %}>Articles</option>
+            <option value="datasets" {% if content_type == "datasets" %}selected{% endif %}>Datasets</option>
+        </select>
+        <button type="submit" class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
+            {% include "core/includes/icons/search.html" %}
+            Search
+        </button>
+    </form>
 
-{% if search_results %}
-<ul>
-    {% for result in search_results %}
-    <li>
-        <h4><a href="{% pageurl result %}">{{ result }}</a></h4>
-        {% if result.search_description %}
-        {{ result.search_description }}
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
+    {% if search_results %}
+        <ul class="space-y-6">
+            {% for result in search_results %}
+                <li class="border-b border-border dark:border-border-dark pb-6">
+                    <a href="{% pageurl result %}" class="text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light text-lg font-medium">
+                        {{ result }}
+                    </a>
+                    {% if result.search_description %}
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">{{ result.search_description }}</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
 
-{% if search_results.has_previous %}
-<a href="{% url 'search' %}?query={{ search_query|urlencode }}&amp;page={{ search_results.previous_page_number }}">Previous</a>
-{% endif %}
-
-{% if search_results.has_next %}
-<a href="{% url 'search' %}?query={{ search_query|urlencode }}&amp;page={{ search_results.next_page_number }}">Next</a>
-{% endif %}
-{% elif search_query %}
-No results found
-{% endif %}
+        <div class="mt-6 flex gap-3">
+            {% if search_results.has_previous %}
+                <a href="{% url 'search' %}?query={{ search_query|urlencode }}{% if content_type %}&type={{ content_type }}{% endif %}&page={{ search_results.previous_page_number }}" class="text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light">Previous</a>
+            {% endif %}
+            {% if search_results.has_next %}
+                <a href="{% url 'search' %}?query={{ search_query|urlencode }}{% if content_type %}&type={{ content_type }}{% endif %}&page={{ search_results.next_page_number }}" class="text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light">Next</a>
+            {% endif %}
+        </div>
+    {% elif search_query %}
+        <p class="text-gray-500 dark:text-gray-400">No results found.</p>
+    {% endif %}
+</div>
 {% endblock %}

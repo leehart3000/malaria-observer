@@ -143,6 +143,7 @@
                     Light
                 </span>
             </button>
+                <a href="{% url 'search' %}" class="hover:text-blood dark:hover:text-navy-light">Search</a>
                 {% privacy_page_url as privacy_url %}
                 {% if privacy_url %}<a href="{{ privacy_url }}" class="hover:text-blood dark:hover:text-navy-light">Privacy</a>{% endif %}
                 {% if contact_url %}<a href="{{ contact_url }}" class="hover:text-blood dark:hover:text-navy-light">Contact</a>{% endif %}
