@@ -58,6 +58,9 @@ jobs:
       - name: Run database migrations
         run: uv run python manage.py migrate
 
+      - name: Check for missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
       - name: Pytest tests with coverage
         run: uv run pytest
 
