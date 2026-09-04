@@ -1,0 +1,99 @@
+name: Backup Staging and Test Restore
+
+on:
+  schedule:
+    # Every Sunday at 23:00
+    - cron: "0 23 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  PROJECT_ID: malaria-observer
+  GCS_BUCKET: malaria-observer-staging-db-backups
+  DJANGO_SETTINGS_MODULE: malaria_observer.settings.test
+
+jobs:
+  backup-and-verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: restoretest
+          POSTGRES_USER: restoretest
+          POSTGRES_PASSWORD: restoretest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/147133052108/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: gha-staging-backup-sa@malaria-observer.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Dump staging database
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          echo "DUMP_FILE=staging-${TIMESTAMP}.dump" >> "$GITHUB_ENV"
+          pg_dump "$STAGING_DATABASE_URL" --format=custom -f "/tmp/staging-${TIMESTAMP}.dump"
+
+      - name: Upload dump to GCS
+        run: |
+          gcloud storage cp "/tmp/${DUMP_FILE}" "gs://${GCS_BUCKET}/${DUMP_FILE}"
+
+      - name: Restore dump into scratch Postgres
+        env:
+          PGPASSWORD: restoretest
+        run: |
+          pg_restore \
+            --host=localhost --port=5432 \
+            --username=restoretest --dbname=restoretest \
+            --no-owner --no-privileges \
+            "/tmp/${DUMP_FILE}"
+
+      - name: Set up uv with Python 3.13
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
+      - name: Sanity-check restored database
+        env:
+          DATABASE_URL: postgres://restoretest:restoretest@localhost:5432/restoretest
+          SECRET_KEY: dummy-ci-secret-key
+        run: |
+          uv run python manage.py migrate --check
+          uv run python manage.py check
+          uv run python manage.py shell -c "
+          from django.contrib.auth import get_user_model
+          from wagtail.models import Page
+          User = get_user_model()
+          print(f'auth_user rows: {User.objects.count()}')
+          print(f'wagtail page rows: {Page.objects.count()}')
+          assert Page.objects.count() > 0, 'Restored DB has no Wagtail pages — backup may be empty or broken'
+          "
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Staging backup or restore-test failed — investigate before relying on this backup."
