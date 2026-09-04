@@ -2,7 +2,6 @@ from django import template
 
 from core.markdown import render_markdown
 from datasets.models import DatasetIndexPage
-from home.models import HomePage
 
 register = template.Library()
 
@@ -30,8 +29,10 @@ def sample_filter_form(
 
 @register.simple_tag
 def home_page_url():
-    page = HomePage.objects.live().first()
-    return page.url if page else "/"
+    from wagtail.models import Site
+
+    site = Site.objects.filter(is_default_site=True).first()
+    return site.root_page.url if site else "/"
 
 
 @register.simple_tag
