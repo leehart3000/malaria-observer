@@ -93,7 +93,35 @@
     <nav x-data="{ open: false }" class="bg-white dark:bg-surface-dark border-b border-border dark:border-border-dark px-4 py-3">
         <div class="flex items-center justify-between">
             <a href="{% home_page_url %}" class="group flex items-center gap-3">
-                <img src="{% static 'svg/logo.svg' %}" alt="Malaria Observer" class="h-9 w-9">
+                <svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 flex-shrink-0">
+                    <defs>
+                        <mask id="logo-m-cutout">
+                            <circle cx="50" cy="50" r="34.5" fill="white" />
+                            <path
+                                d="M25.6,82 L25.6,21.4 L50,84.5 L74.4,21.4 L74.4,82"
+                                fill="none"
+                                stroke="black"
+                                stroke-width="7.7"
+                                stroke-linecap="butt"
+                                stroke-linejoin="miter"
+                                stroke-miterlimit="10"
+                            />
+                        </mask>
+                    </defs>
+
+                    <!-- Hover fill: transparent by default, sky blue on group hover -->
+                    <circle
+                        cx="50" cy="50" r="41.9"
+                        fill="transparent"
+                        class="group-hover:fill-[#3F72C8] dark:group-hover:fill-[#3F72C8] transition-colors duration-[180ms] ease-out"
+                    />
+
+                    <!-- Inner blood-red circle — M punched through via mask -->
+                    <circle cx="50" cy="50" r="34.5" fill="#8C1010" mask="url(#logo-m-cutout)" />
+
+                    <!-- Outer blood-red ring -->
+                    <circle cx="50" cy="50" r="45.75" fill="none" stroke="#8C1010" stroke-width="7.5" />
+                </svg>
                 <span class="font-serif font-semibold text-lg text-ink dark:text-inkdark group-hover:text-blood dark:group-hover:text-navy-light">
                     malaria<span class="text-blood mx-1">·</span><span class="font-medium text-gray-500 dark:text-gray-400 group-hover:text-blood dark:group-hover:text-navy-light">observer</span>
                 </span>
