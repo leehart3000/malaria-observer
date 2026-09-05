@@ -52,7 +52,10 @@ jobs:
         run: |
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           echo "DUMP_FILE=staging-${TIMESTAMP}.dump" >> "$GITHUB_ENV"
-          pg_dump "$STAGING_DATABASE_URL" --format=custom -f "/tmp/staging-${TIMESTAMP}.dump"
+          docker run --rm \
+            -v /tmp:/tmp \
+            postgres:17 \
+            pg_dump "$STAGING_DATABASE_URL" --format=custom -f "/tmp/staging-${TIMESTAMP}.dump"
 
       - name: Upload dump to GCS
         run: |
@@ -62,11 +65,16 @@ jobs:
         env:
           PGPASSWORD: restoretest
         run: |
-          pg_restore \
-            --host=localhost --port=5432 \
-            --username=restoretest --dbname=restoretest \
-            --no-owner --no-privileges \
-            "/tmp/${DUMP_FILE}"
+          docker run --rm \
+            --network=host \
+            -v /tmp:/tmp \
+            -e PGPASSWORD=restoretest \
+            postgres:17 \
+            pg_restore \
+              --host=localhost --port=5432 \
+              --username=restoretest --dbname=restoretest \
+              --no-owner --no-privileges \
+              "/tmp/${DUMP_FILE}"
 
       - name: Set up uv with Python 3.13
         uses: astral-sh/setup-uv@v7
