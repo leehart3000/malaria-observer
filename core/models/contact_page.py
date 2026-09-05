@@ -12,4 +12,5 @@ class ContactPage(BasePage):
     subpage_types: list[str] = []  # noqa: RUF012
 
     class Meta:
-        verbose_name = "Contact Page"
+        verbose_name = "Contact page"
+        verbose_name_plural = "Contact pages"

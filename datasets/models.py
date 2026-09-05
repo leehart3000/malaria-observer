@@ -80,7 +80,7 @@ class Dataset(index.Indexed, models.Model):
     ]
 
     def __str__(self) -> str:
-        return f"{self.dataset_id} -- {self.name}"
+        return self.name
 
     @property
     def has_geographic_data(self) -> bool:

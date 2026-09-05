@@ -10,4 +10,5 @@ class PrivacyPage(BasePage):
     subpage_types: list[str] = []  # noqa: RUF012
 
     class Meta:
-        verbose_name = "Privacy Page"
+        verbose_name = "Privacy page"
+        verbose_name_plural = "Privacy pages"
