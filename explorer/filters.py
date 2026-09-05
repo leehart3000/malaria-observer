@@ -6,7 +6,7 @@ from .models import SampleRecord
 
 SORTABLE_COLUMNS = [
     ("sample", "Sample"),
-    ("source_study", "Source Study"),
+    ("study", "Study"),
     ("country", "Country"),
     ("year", "Year"),
     ("qc_pass", "QC Pass"),
