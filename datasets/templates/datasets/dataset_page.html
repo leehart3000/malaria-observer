@@ -19,7 +19,7 @@
                 {% if page.dataset.doi %}
                     <div class="py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                         <dt class="font-medium sm:w-32 sm:shrink-0">DOI</dt>
-                        <dd class="break-words"><a href="{{ page.dataset.doi }}" class="text-blood hover:text-blood-hover">{{ page.dataset.doi }}</a></dd>
+                        <dd class="break-words"><a href="{{ dataset.doi }}" target="_blank" rel="noopener noreferrer" class="text-blood hover:underline decoration-1 dark:text-inkdark dark:font-bold dark:underline dark:hover:text-navy-light">{{ page.dataset.doi }}</a></dd>
                     </div>
                 {% endif %}
                 {% if page.dataset.license %}
