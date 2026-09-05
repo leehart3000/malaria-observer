@@ -51,8 +51,24 @@ EXCLUDE_TABLES=(
   auth_user_user_permissions
   django_session
   django_admin_log
+  django_migrations
   wagtailcore_apitoken
   wagtailusers_userprofile
+)
+
+# Django/Wagtail bootstrap tables: populated identically and deterministically
+# by every environment's own migrations (content types, permissions, the
+# default locale). These are safe to merge with ON CONFLICT DO NOTHING,
+# since a "collision" here just means both sides already agree.
+# Never put actual content (pages, datasets, articles, etc.) in this list --
+# for real content, a PK collision means the TARGET's stale copy silently
+# wins and the SOURCE's real edits get discarded with no error.
+BOOTSTRAP_TABLES=(
+  django_content_type
+  auth_permission
+  auth_group
+  auth_group_permissions
+  wagtailcore_locale
 )
 
 # ---- Arg parsing --------------------------------------------------------
@@ -103,24 +119,79 @@ mkdir -p "$BACKUP_DIR"
 
 # ---- Helpers ------------------------------------------------------------
 
-exclude_args() {
-  local args=()
+# Populates the global EXCL_ARGS array directly (no subshell/mapfile,
+# for compatibility with the old Bash 3.2 shipped by default on macOS).
+# Excludes both the permanent EXCLUDE_TABLES and the BOOTSTRAP_TABLES,
+# since bootstrap tables are dumped/restored separately with merge semantics.
+build_exclude_args() {
+  EXCL_ARGS=()
   for t in "${EXCLUDE_TABLES[@]}"; do
-    args+=(--exclude-table="$t")
+    EXCL_ARGS+=(--exclude-table="$t")
   done
-  printf '%s\n' "${args[@]}"
+  for t in "${BOOTSTRAP_TABLES[@]}"; do
+    EXCL_ARGS+=(--exclude-table="$t")
+  done
 }
 
-table_filter_args() {
-  # If --tables was given, restrict pg_dump to ONLY those tables.
+# Populates BOOTSTRAP_INCLUDE_ARGS: --table=X for each bootstrap table,
+# used for the small separate bootstrap dump/restore pass.
+build_bootstrap_args() {
+  BOOTSTRAP_INCLUDE_ARGS=()
+  for t in "${BOOTSTRAP_TABLES[@]}"; do
+    BOOTSTRAP_INCLUDE_ARGS+=(--table="$t")
+  done
+}
+
+# Populates the global TBL_ARGS array directly.
+build_table_filter_args() {
+  TBL_ARGS=()
   if [[ -n "$TABLES_FILTER" ]]; then
-    local args=()
     IFS=',' read -ra TBLS <<< "$TABLES_FILTER"
     for t in "${TBLS[@]}"; do
-      args+=(--table="$t")
+      TBL_ARGS+=(--table="$t")
     done
-    printf '%s\n' "${args[@]}"
   fi
+}
+
+# Given a content-only dump file, extracts the real table names it contains
+# and returns a "TRUNCATE TABLE a, b, c CASCADE;" statement as a string.
+# This is what makes a pull/push a true replace rather than a merge --
+# Wagtail's page tree and related content cannot be safely row-merged
+# between two independently-bootstrapped trees.
+build_truncate_statement() {
+  local dump_file="$1"
+  local tables
+  tables=$(pg_restore -l "$dump_file" | awk '/TABLE DATA/ {print $7}' | sort -u)
+  if [[ -z "$tables" ]]; then
+    return 1
+  fi
+  local joined
+  joined=$(printf '"%s", ' $tables)
+  joined="${joined%, }"
+  echo "TRUNCATE TABLE $joined CASCADE;"
+}
+
+truncate_content_tables_on_local() {
+  local dump_file="$1"
+  local stmt
+  if ! stmt="$(build_truncate_statement "$dump_file")"; then
+    echo "No content tables found to truncate -- skipping." >&2
+    return 0
+  fi
+  echo "==> Truncating LOCAL content tables before replace-restore..."
+  docker compose exec -T "$LOCAL_DB_SERVICE" \
+    psql -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" -c "$stmt"
+}
+
+truncate_content_tables_on_staging() {
+  local dump_file="$1"
+  local stmt
+  if ! stmt="$(build_truncate_statement "$dump_file")"; then
+    echo "No content tables found to truncate -- skipping." >&2
+    return 0
+  fi
+  echo "==> Truncating STAGING content tables before replace-restore..."
+  psql "$STAGING_DATABASE_URL" -c "$stmt"
 }
 
 safety_dump_target() {
@@ -140,19 +211,29 @@ safety_dump_target() {
 # ---- Main -----------------------------------------------------------------
 
 SOURCE_DUMP="$BACKUP_DIR/sync-source-${TIMESTAMP}.dump"
+BOOTSTRAP_DUMP="$BACKUP_DIR/sync-bootstrap-${TIMESTAMP}.dump"
 
-mapfile -t EXCL_ARGS < <(exclude_args)
-mapfile -t TBL_ARGS < <(table_filter_args)
+build_exclude_args
+build_bootstrap_args
+build_table_filter_args
 
 if [[ "$TO" == "staging" ]]; then
   SOURCE_LABEL="local"
   TARGET_LABEL="staging"
 
-  echo "==> Dumping data-only content from LOCAL (excluding auth/session tables)..."
+  echo "==> Dumping bootstrap tables from LOCAL (merge-safe)..."
+  docker compose exec -T "$LOCAL_DB_SERVICE" \
+    pg_dump -U "$LOCAL_DB_USER" "$LOCAL_DB_NAME" \
+      --data-only --format=custom --inserts --on-conflict-do-nothing \
+      "${BOOTSTRAP_INCLUDE_ARGS[@]}" \
+      -f /tmp/sync_bootstrap.dump
+  docker compose cp "$LOCAL_DB_SERVICE:/tmp/sync_bootstrap.dump" "$BOOTSTRAP_DUMP"
+
+  echo "==> Dumping content tables from LOCAL (excluding auth/session/bootstrap tables)..."
   docker compose exec -T "$LOCAL_DB_SERVICE" \
     pg_dump -U "$LOCAL_DB_USER" "$LOCAL_DB_NAME" \
       --data-only --format=custom \
-      "${EXCL_ARGS[@]}" "${TBL_ARGS[@]}" \
+      "${EXCL_ARGS[@]}" ${TBL_ARGS[@]+"${TBL_ARGS[@]}"} \
       -f /tmp/sync_source.dump
   docker compose cp "$LOCAL_DB_SERVICE:/tmp/sync_source.dump" "$SOURCE_DUMP"
 
@@ -160,22 +241,31 @@ else
   SOURCE_LABEL="staging"
   TARGET_LABEL="local"
 
-  echo "==> Dumping data-only content from STAGING (excluding auth/session tables)..."
+  echo "==> Dumping bootstrap tables from STAGING (merge-safe)..."
+  pg_dump "$STAGING_DATABASE_URL" \
+    --data-only --format=custom --inserts --on-conflict-do-nothing \
+    "${BOOTSTRAP_INCLUDE_ARGS[@]}" \
+    -f "$BOOTSTRAP_DUMP"
+
+  echo "==> Dumping content tables from STAGING (excluding auth/session/bootstrap tables)..."
   pg_dump "$STAGING_DATABASE_URL" \
     --data-only --format=custom \
-    "${EXCL_ARGS[@]}" "${TBL_ARGS[@]}" \
+    "${EXCL_ARGS[@]}" ${TBL_ARGS[@]+"${TBL_ARGS[@]}"} \
     -f "$SOURCE_DUMP"
 fi
 
 echo "==> Source dump written: $SOURCE_DUMP"
+echo "==> Bootstrap dump written: $BOOTSTRAP_DUMP"
 echo
-echo "==> Contents of source dump (table-of-contents):"
+echo "==> Contents of content dump (table-of-contents):"
 pg_restore -l "$SOURCE_DUMP"
 echo
 
 if [[ "$APPLY" != "true" ]]; then
   echo "Dry run only (no --apply passed). Nothing was written to $TARGET_LABEL."
   echo "Review the table list above, then re-run with --apply to actually restore."
+  echo "Note: content tables will be REPLACED (truncated then reloaded) on the"
+  echo "target -- bootstrap tables are merged (existing rows kept on conflict)."
   exit 0
 fi
 
@@ -183,20 +273,39 @@ echo "==> --apply passed. Proceeding to write into $TARGET_LABEL."
 safety_dump_target "$TARGET_LABEL"
 
 if [[ "$TO" == "staging" ]]; then
-  echo "==> Restoring into STAGING..."
-  pg_restore --data-only --disable-triggers -d "$STAGING_DATABASE_URL" "$SOURCE_DUMP"
+  echo "==> Merging bootstrap tables into STAGING..."
+  pg_restore --data-only --disable-triggers \
+    -d "$STAGING_DATABASE_URL" "$BOOTSTRAP_DUMP"
+
+  truncate_content_tables_on_staging "$SOURCE_DUMP"
+
+  echo "==> Replacing content tables in STAGING..."
+  pg_restore --data-only --disable-triggers \
+    -d "$STAGING_DATABASE_URL" "$SOURCE_DUMP"
+
   echo "==> Rebuilding Wagtail search index on staging..."
   echo "    (run separately, e.g.:)"
   echo "    gcloud run jobs execute migrate-staging --region=europe-west3 --project=malaria-observer \\"
   echo "      --command=python --args=manage.py,update_index --wait"
 else
-  echo "==> Restoring into LOCAL..."
+  echo "==> Merging bootstrap tables into LOCAL..."
+  docker compose cp "$BOOTSTRAP_DUMP" "$LOCAL_DB_SERVICE:/tmp/sync_bootstrap_apply.dump"
+  docker compose exec -T "$LOCAL_DB_SERVICE" \
+    pg_restore --data-only --disable-triggers \
+      -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" /tmp/sync_bootstrap_apply.dump
+
+  truncate_content_tables_on_local "$SOURCE_DUMP"
+
+  echo "==> Replacing content tables in LOCAL..."
   docker compose cp "$SOURCE_DUMP" "$LOCAL_DB_SERVICE:/tmp/sync_apply.dump"
   docker compose exec -T "$LOCAL_DB_SERVICE" \
-    pg_restore --data-only --disable-triggers -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" /tmp/sync_apply.dump
+    pg_restore --data-only --disable-triggers \
+      -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" /tmp/sync_apply.dump
+
   echo "==> You may want to run 'docker compose exec web python manage.py update_index' now."
 fi
 
 echo
-echo "Done. Source dump kept at: $SOURCE_DUMP"
+echo "Done. Content dump kept at: $SOURCE_DUMP"
+echo "Bootstrap dump kept at: $BOOTSTRAP_DUMP"
 echo "Target safety dump kept in: $BACKUP_DIR"
