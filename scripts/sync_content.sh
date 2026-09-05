@@ -33,6 +33,15 @@
 # Requires: docker compose (for the "local" side), psql/pg_dump/pg_restore
 # client tools matching your Postgres major version, and STAGING_DATABASE_URL
 # set in the environment (e.g. sourced from .env.staging).
+#
+# Note on --disable-triggers: only used for LOCAL restores. Neon's
+# neondb_owner role is not a true Postgres superuser, so it cannot
+# disable the system RI_ConstraintTrigger objects that --disable-triggers
+# needs to touch -- staging restores fail with "permission denied: ...
+# is a system trigger" if this flag is used against Neon. It isn't
+# needed for staging pushes anyway: those are limited to the --tables
+# data-import allowlist, which has no circular foreign keys (unlike
+# Wagtail's page-tree tables, which only ever flow staging -> local).
 
 set -euo pipefail
 
@@ -274,13 +283,13 @@ safety_dump_target "$TARGET_LABEL"
 
 if [[ "$TO" == "staging" ]]; then
   echo "==> Merging bootstrap tables into STAGING..."
-  pg_restore --data-only --disable-triggers \
+  pg_restore --data-only \
     -d "$STAGING_DATABASE_URL" "$BOOTSTRAP_DUMP"
 
   truncate_content_tables_on_staging "$SOURCE_DUMP"
 
   echo "==> Replacing content tables in STAGING..."
-  pg_restore --data-only --disable-triggers \
+  pg_restore --data-only \
     -d "$STAGING_DATABASE_URL" "$SOURCE_DUMP"
 
   echo "==> Rebuilding Wagtail search index on staging..."
