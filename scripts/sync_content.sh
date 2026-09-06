@@ -19,7 +19,8 @@
 # Usage:
 #   scripts/sync_content.sh --to=staging --tables=table1,table2 [--apply]
 #   scripts/sync_content.sh --to=staging --allow-full-push [--apply]   (bootstrap only)
-#   scripts/sync_content.sh --to=local   [--tables=table1,table2] [--apply]
+#   scripts/sync_content.sh --to=local      [--tables=table1,table2] [--apply]
+#   scripts/sync_content.sh --to=production [--tables=table1,table2] [--apply]
 #
 # Policy (staging Wagtail = source of truth):
 #   - local -> staging pushes MUST be restricted with --tables to your
@@ -27,12 +28,26 @@
 #     is only for the one-off initial bootstrap and requires the explicit
 #     --allow-full-push flag as well as --apply, so it can't happen by
 #     accident once staging holds real editor content.
-#   - staging -> local pulls are unrestricted by default (that's the
-#     intended steady-state direction for Wagtail content).
+#   - staging -> local and staging -> production pulls are unrestricted
+#     by default (that's the intended steady-state direction for Wagtail
+#     content). Production NEVER pushes anywhere, and local NEVER talks
+#     to production directly -- staging is the sole hub.
 #
 # Requires: docker compose (for the "local" side), psql/pg_dump/pg_restore
-# client tools matching your Postgres major version, and STAGING_DATABASE_URL
-# set in the environment (e.g. sourced from .env.staging).
+# client tools matching your Postgres major version, STAGING_DATABASE_URL
+# set in the environment for any staging-involving sync, and
+# PRODUCTION_DATABASE_URL set in the environment for --to=production
+# (e.g. sourced from .env.staging / .env.production).
+#
+# IMPORTANT (Neon): use the DIRECT (non-pooled) connection string for
+# STAGING_DATABASE_URL / PRODUCTION_DATABASE_URL, not the default pooled
+# "-pooler" one Neon's dashboard shows first. The pooled endpoint has
+# been observed to intermittently and silently present a stale/empty
+# view of the database immediately after a migration run, causing
+# spurious "relation does not exist" errors on an otherwise-correct
+# schema. The pooled connection string is fine (and preferred) for the
+# app's own runtime DATABASE_URL secret -- this only affects the admin/
+# sync connection this script uses.
 #
 # Note on --disable-triggers: only used for LOCAL restores. Neon's
 # neondb_owner role is not a true Postgres superuser, so it cannot
@@ -104,8 +119,8 @@ for arg in "$@"; do
   esac
 done
 
-if [[ "$TO" != "staging" && "$TO" != "local" ]]; then
-  echo "Error: --to=staging or --to=local is required." >&2
+if [[ "$TO" != "staging" && "$TO" != "local" && "$TO" != "production" ]]; then
+  echo "Error: --to=staging, --to=local, or --to=production is required." >&2
   exit 1
 fi
 
@@ -117,11 +132,41 @@ if [[ "$TO" == "staging" && -z "$TABLES_FILTER" && "$ALLOW_FULL_PUSH" != "true" 
   exit 1
 fi
 
-if [[ -z "${STAGING_DATABASE_URL:-}" ]]; then
+if [[ "$TO" != "local" && "$TO" != "production" && -z "${STAGING_DATABASE_URL:-}" ]]; then
   echo "Error: STAGING_DATABASE_URL is not set." >&2
   echo "e.g. export STAGING_DATABASE_URL=\$(grep DATABASE_URL .env.staging | cut -d= -f2-)" >&2
   exit 1
 fi
+
+if [[ "$TO" == "local" && -z "${STAGING_DATABASE_URL:-}" ]]; then
+  echo "Error: STAGING_DATABASE_URL is not set." >&2
+  echo "e.g. export STAGING_DATABASE_URL=\$(grep DATABASE_URL .env.staging | cut -d= -f2-)" >&2
+  exit 1
+fi
+
+if [[ "$TO" == "production" && -z "${STAGING_DATABASE_URL:-}" ]]; then
+  echo "Error: STAGING_DATABASE_URL is not set (production pulls FROM staging)." >&2
+  echo "e.g. export STAGING_DATABASE_URL=\$(grep DATABASE_URL .env.staging | cut -d= -f2-)" >&2
+  exit 1
+fi
+
+if [[ "$TO" == "production" && -z "${PRODUCTION_DATABASE_URL:-}" ]]; then
+  echo "Error: PRODUCTION_DATABASE_URL is not set." >&2
+  echo "e.g. export PRODUCTION_DATABASE_URL=\$(grep DIRECT_DATABASE_URL .env.production | cut -d= -f2-)" >&2
+  exit 1
+fi
+
+for _url_var in STAGING_DATABASE_URL PRODUCTION_DATABASE_URL; do
+  _url_val="${!_url_var:-}"
+  if [[ -n "$_url_val" && "$_url_val" == *"-pooler"* ]]; then
+    echo "Warning: $_url_var looks like a Neon POOLED connection string" >&2
+    echo "(contains '-pooler'). Use the DIRECT connection string for this" >&2
+    echo "script -- pooled connections have caused intermittent spurious" >&2
+    echo "'relation does not exist' errors during sync operations." >&2
+    echo "Continuing in 5 seconds anyway (Ctrl-C to abort)..." >&2
+    sleep 5
+  fi
+done
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
@@ -203,14 +248,27 @@ truncate_content_tables_on_staging() {
   psql "$STAGING_DATABASE_URL" -c "$stmt"
 }
 
+truncate_content_tables_on_production() {
+  local dump_file="$1"
+  local stmt
+  if ! stmt="$(build_truncate_statement "$dump_file")"; then
+    echo "No content tables found to truncate -- skipping." >&2
+    return 0
+  fi
+  echo "==> Truncating PRODUCTION content tables before replace-restore..."
+  psql "$PRODUCTION_DATABASE_URL" -c "$stmt"
+}
+
 safety_dump_target() {
-  local target="$1" # "local" or "staging"
+  local target="$1" # "local", "staging", or "production"
   local out="$BACKUP_DIR/pre-sync-${target}-${TIMESTAMP}.dump"
   echo "Taking safety dump of TARGET ($target) before writing: $out"
   if [[ "$target" == "local" ]]; then
     docker compose exec -T "$LOCAL_DB_SERVICE" \
       pg_dump -U "$LOCAL_DB_USER" "$LOCAL_DB_NAME" --format=custom -f /tmp/pre_sync_target.dump
     docker compose cp "$LOCAL_DB_SERVICE:/tmp/pre_sync_target.dump" "$out"
+  elif [[ "$target" == "production" ]]; then
+    pg_dump "$PRODUCTION_DATABASE_URL" --format=custom -f "$out"
   else
     pg_dump "$STAGING_DATABASE_URL" --format=custom -f "$out"
   fi
@@ -246,9 +304,25 @@ if [[ "$TO" == "staging" ]]; then
       -f /tmp/sync_source.dump
   docker compose cp "$LOCAL_DB_SERVICE:/tmp/sync_source.dump" "$SOURCE_DUMP"
 
-else
+elif [[ "$TO" == "local" ]]; then
   SOURCE_LABEL="staging"
   TARGET_LABEL="local"
+
+  echo "==> Dumping bootstrap tables from STAGING (merge-safe)..."
+  pg_dump "$STAGING_DATABASE_URL" \
+    --data-only --format=custom --inserts --on-conflict-do-nothing \
+    "${BOOTSTRAP_INCLUDE_ARGS[@]}" \
+    -f "$BOOTSTRAP_DUMP"
+
+  echo "==> Dumping content tables from STAGING (excluding auth/session/bootstrap tables)..."
+  pg_dump "$STAGING_DATABASE_URL" \
+    --data-only --format=custom \
+    "${EXCL_ARGS[@]}" ${TBL_ARGS[@]+"${TBL_ARGS[@]}"} \
+    -f "$SOURCE_DUMP"
+
+else
+  SOURCE_LABEL="staging"
+  TARGET_LABEL="production"
 
   echo "==> Dumping bootstrap tables from STAGING (merge-safe)..."
   pg_dump "$STAGING_DATABASE_URL" \
@@ -295,7 +369,24 @@ if [[ "$TO" == "staging" ]]; then
   echo "==> Rebuilding Wagtail search index on staging..."
   echo "    (run separately, e.g.:)"
   echo "    gcloud run jobs execute migrate-staging --region=europe-west3 --project=malaria-observer \\"
-  echo "      --command=python --args=manage.py,update_index --wait"
+  echo "      --args=manage.py,update_index --wait"
+
+elif [[ "$TO" == "production" ]]; then
+  echo "==> Merging bootstrap tables into PRODUCTION..."
+  pg_restore --data-only \
+    -d "$PRODUCTION_DATABASE_URL" "$BOOTSTRAP_DUMP"
+
+  truncate_content_tables_on_production "$SOURCE_DUMP"
+
+  echo "==> Replacing content tables in PRODUCTION..."
+  pg_restore --data-only \
+    -d "$PRODUCTION_DATABASE_URL" "$SOURCE_DUMP"
+
+  echo "==> Rebuilding Wagtail search index on production..."
+  echo "    (run separately, e.g.:)"
+  echo "    gcloud run jobs execute migrate-production --region=europe-west3 --project=malaria-observer \\"
+  echo "      --args=manage.py,update_index --wait"
+
 else
   echo "==> Merging bootstrap tables into LOCAL..."
   docker compose cp "$BOOTSTRAP_DUMP" "$LOCAL_DB_SERVICE:/tmp/sync_bootstrap_apply.dump"
