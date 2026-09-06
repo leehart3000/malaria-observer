@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ page.title }}{% endblock %}</title>
+    <title>{% block title %}Malaria Observer - {{ page.seo_title|default:page.title }}{% endblock %}</title>
 
     <script>
         if (localStorage.getItem('theme') === 'dark') {
