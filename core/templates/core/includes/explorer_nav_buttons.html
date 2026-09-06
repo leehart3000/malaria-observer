@@ -12,14 +12,14 @@
                 <a href="{% url 'explorer_geo' %}?{{ carried_query }}"
                    class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
                     {% include "core/includes/icons/globe.html" %}
-                    View data on map
+                    Geographic Explorer
                 </a>
             {% endif %}
         {% else %}
             <a href="{% url 'explorer_table' %}?{{ carried_query }}"
                class="inline-flex items-center gap-2 bg-blood text-white px-4 py-2 rounded hover:bg-blood-hover">
                 {% include "core/includes/icons/table.html" %}
-                View data in table
+                Datatable Explorer
             </a>
         {% endif %}
     </div>
