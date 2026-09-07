@@ -103,6 +103,7 @@ if env_file.exists():
     env.read_env(env_file)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+USE_X_FORWARDED_HOST = True
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT = env("ENVIRONMENT", default="dev")
