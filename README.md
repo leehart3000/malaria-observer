@@ -26,8 +26,6 @@ uv run python manage.py createsuperuser
 just run
 ```
 
-Visit http://localhost:8000/admin/
-
 ## Daily development
 
 ```sh

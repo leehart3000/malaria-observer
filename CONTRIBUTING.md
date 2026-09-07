@@ -45,8 +45,6 @@
    just run
 ```
 
-   Visit http://localhost:8000/admin/
-
 ## Common tasks
 
 | Command       | What it does                          |

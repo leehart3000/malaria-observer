@@ -9,8 +9,8 @@ from explorer.views import ExplorerGeoView, ExplorerTableView
 from search import views as search_views
 
 urlpatterns = [
-    path("django-admin/", admin.site.urls),
-    path("admin/", include(wagtailadmin_urls)),
+    path("django-07S/", admin.site.urls),
+    path("wagtail-07S/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     path("search/", search_views.search, name="search"),
     path("explorer/table/", ExplorerTableView.as_view(), name="explorer_table"),
