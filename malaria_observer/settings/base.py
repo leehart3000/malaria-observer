@@ -110,6 +110,7 @@ ENVIRONMENT = env("ENVIRONMENT", default="dev")
 GOOGLE_ANALYTICS_ID = env("GOOGLE_ANALYTICS_ID", default="")
 SECRET_KEY = env("SECRET_KEY")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
