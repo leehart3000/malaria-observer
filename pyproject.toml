@@ -9,7 +9,7 @@ dependencies = [
     "gunicorn>=26.2.0",
     "markdown>=3.10.3",
     "psycopg[binary]>=3.3.6",
-    "sentry-sdk>=2.69.1",
+    "sentry-sdk>=2.69.2",
     "wagtail>=8.0",
     "whitenoise>=6.6.0",
 ]
